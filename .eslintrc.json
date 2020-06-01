@@ -1,0 +1,23 @@
+{
+    "extends": "standard",
+    "parser": "babel-eslint",
+    "plugins": [
+        "react"
+    ],
+    "rules": {
+        "indent": ["error", 4, {"SwitchCase": 1}],
+        "generator-star-spacing": ["error", {"before": false, "after": true}],
+        "yield-star-spacing": ["error", {"before": false, "after": true}],
+        "react/jsx-uses-react": "error",
+        "react/jsx-uses-vars": "error",
+        "camelcase": ["error", {"ignoreDestructuring": true}],
+        "prefer-const": ["error", {
+            "destructuring": "any",
+            "ignoreReadBeforeAssign": false
+        }],
+        "no-console": ["error", { "allow": ["warn", "error", "deinfo"] }]
+    },
+    "env": {
+        "browser": true
+    }
+}
