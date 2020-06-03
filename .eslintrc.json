@@ -56,7 +56,9 @@
             "destructuring": "all",
             "ignoreReadBeforeAssign": false
         }],
-        "no-console": ["error", { "allow": ["warn", "error", "deinfo"] }]
+        "no-console": ["error", { "allow": ["warn", "error", "deinfo"] }],
+        "react/prop-types": "off",
+        "react/display-name": "off"
     },
     "env": {
         "browser": true,

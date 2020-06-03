@@ -1,21 +1,26 @@
+import { ProcessedObject, Primitives } from './types';
+import { ExtendedPropertyDescriptorMap } from 'types/types';
+
 let emptyArrayFlag = false;
+type Value = ProcessedObject | Primitives | unknown
+interface CopyCallback {
+    (object: ProcessedObject): ProcessedObject;
+}
 
 /**
  * Is duplicated for stringify possibility.
  * @param value
  * @returns {boolean}
  */
-const isObject = (value) =>
+const isObject = (value: unknown): boolean =>
     Object.prototype.toString.call(value) === '[object Object]';
 
 /**
  * Slow and flexible deep copier.
- * @param data
- * @returns {[]}
  */
-const deepCopy = (data) => {
+const deepCopy = (data: ProcessedObject): ProcessedObject => {
     if (isObject(data)) {
-        const props = Object.getOwnPropertyDescriptors(data);
+        const props: ExtendedPropertyDescriptorMap = Object.getOwnPropertyDescriptors(data);
         for (const i of Object.getOwnPropertyNames(props)) {
             if (!Object.prototype.hasOwnProperty.call(props, i)) continue;
             props[i].value = getValue(props[i].value);
@@ -27,35 +32,36 @@ const deepCopy = (data) => {
         return Object.create(Object.getPrototypeOf(data), props);
     }
     if (Array.isArray(data)) {
-        const clone = [];
+        const clone: Array<Value> = [];
         for (const i of data) {
             clone.push(getValue(i));
         }
         return clone;
     }
+    console.warn('[warning] deepCopy: an array or an object must be passed for processing.');
+    return data;
 };
 
-const getValue = (value) => {
+const getValue = (value: Value): Value => {
     if (isObject(value) || Array.isArray(value)) {
-        return deepCopy(value);
+        return deepCopy(<ProcessedObject>value);
     } else {
         return value;
     }
 };
 
+// todo: 1) add a processing the next types of object: regexp, date, map, set, function, generator and boxed primitives.
+// todo: 2) add symbol keys processing.
 /**
  * This method returns a constructor that can be used to copy objects that have the same structure as the structure of the source object.
  * The given constructor is very fast but is not efficient on irregular structured objects in arrays and empty arrays that could be filled later.
- * @todo:
- *   1) add a processing the next types of object: regexp, date, map, set, function, generator and boxed primitives.
- *   2) add symbol keys processing.
  * @param {Object} source
  * @returns {Function}
  * @example
- * let Copy = getDeepCopyConstructor(source); // should be created only at once
- * let deepCopiedObject = new Copy(sourceOrSourceSimilarObject); // should be used many times
+ *   let Copy = getDeepCopyConstructor(source); // should be created only at once
+ *   let deepCopiedObject = new Copy(sourceOrSourceSimilarObject); // should be used many times
  */
-const getDeepCopyConstructor = (source) => {
+const getDeepCopyConstructor = (source: ProcessedObject): CopyCallback => {
     if (!isObject(source))
         throw new Error('DeepCopy: the source should be an object!');
     const constructorBody = getConstructorBody(source);
@@ -67,15 +73,10 @@ const getDeepCopyConstructor = (source) => {
         );
     }
     // eslint-disable-next-line no-new-func
-    return new Function('source', constructorBody.join(''));
+    return <CopyCallback>(new Function('source', constructorBody.join('')));
 };
 
-const getConstructorBody = (
-    source,
-    path = '',
-    constructorBody = [],
-    arrayLevel = 0
-) => {
+const getConstructorBody = ( source: ProcessedObject, path = '', constructorBody: Array<string> = [], arrayLevel = 0): Array<string> => {
     if (!path && !isObject(source)) {
         throw new Error('DeepCopy: The root should be an object!');
     }
@@ -108,7 +109,7 @@ const getConstructorBody = (
                 ')',
                 ';'
             );
-            return;
+            return constructorBody;
         }
         arrayLevel++;
         constructorBody.push('this', '.', path, '=', '[', ']', ';');
@@ -117,12 +118,12 @@ const getConstructorBody = (
             '(',
             'let ',
             'i',
-            arrayLevel,
+            String(arrayLevel),
             '=',
             '0',
             ';',
             'i',
-            arrayLevel,
+            String(arrayLevel),
             '<',
             'source',
             '.',
@@ -131,7 +132,7 @@ const getConstructorBody = (
             'length',
             ';',
             'i',
-            arrayLevel,
+            String(arrayLevel),
             '++',
             ')',
             '{'
@@ -139,7 +140,7 @@ const getConstructorBody = (
         // An array with identical structured objects is expected,
         // so that we use only the first object for body generation.
         getConstructorBody(
-            source[0],
+            <ProcessedObject> source[0],
             path + '[' + 'i' + arrayLevel + ']',
             constructorBody,
             arrayLevel

@@ -20,11 +20,9 @@ const Config = (): Configuration => ({
     module: {
         rules: [
             {
-                test: /\.tsx?$/,
+                test: /\.(t|j)sx?$/,
                 exclude: [ /node_modules/ ],
-                use: {
-                    loader: 'ts-loader'
-                },
+                loader: 'ts-loader',
                 options: {
                     transpileOnly: true
                 }

@@ -1,0 +1,1 @@
+export type ExtendedPropertyDescriptorMap = PropertyDescriptorMap | Record<symbol, PropertyDescriptor>
