@@ -1,8 +1,8 @@
 /* eslint-disable key-spacing,indent */
-import dataLinkParser from '../../data_link_parser/v2'
-import getDataLink from './utils/data_link_cache'
-import { isObject } from '../../data_link_parser/utils'
-import runAsyncGenerator from '../utils/run_async_generator'
+import dataLinkParser from '../../data_link_parser/v2';
+import getDataLink from './utils/data_link_cache';
+import { isObject } from '../../data_link_parser/utils';
+import runAsyncGenerator from '../utils/run_async_generator';
 
 // todo: tokens, defaultData, _index_ and _objectId_ processing must be added.
 
@@ -19,10 +19,10 @@ const MODE = {
     USER_SHALLOW: 0b1001,
     CORE_SHALLOW: 0b1010,
     FULL_SHALLOW: 0b1011,
-    USER_DEEP:    0b1101,
-    CORE_DEEP:    0b1110,
-    FULL_DEEP:    0b1111
-}
+    USER_DEEP: 0b1101,
+    CORE_DEEP: 0b1110,
+    FULL_DEEP: 0b1111,
+};
 
 /**
  * Asynchronous data parser.
@@ -33,12 +33,24 @@ const MODE = {
  * @param {number} mode
  * @returns {Promise<*>}
  */
-function asyncDataParser ({ schema, data, rootData, functions, mode = MODE.FULL_DEEP }) {
+function asyncDataParser({
+    schema,
+    data,
+    rootData,
+    functions,
+    mode = MODE.FULL_DEEP,
+}) {
     return new Promise((resolve, reject) => {
-        if (!rootData) rootData = data
-        const iterator = switcher({ dataLink: schema, data, rootData, functions, mode })
-        runAsyncGenerator(iterator, resolve, reject)
-    })
+        if (!rootData) rootData = data;
+        const iterator = switcher({
+            dataLink: schema,
+            data,
+            rootData,
+            functions,
+            mode,
+        });
+        runAsyncGenerator(iterator, resolve, reject);
+    });
 }
 
 /**
@@ -50,14 +62,26 @@ function asyncDataParser ({ schema, data, rootData, functions, mode = MODE.FULL_
  * @param {number} mode
  * @returns {*}
  */
-function syncDataParser ({ schema, data, rootData, functions, mode = MODE.FULL_DEEP }) {
-    if (!rootData) rootData = data
-    const generator = switcher({ dataLink: schema, data, rootData, functions, mode })
-    let result
+function syncDataParser({
+    schema,
+    data,
+    rootData,
+    functions,
+    mode = MODE.FULL_DEEP,
+}) {
+    if (!rootData) rootData = data;
+    const generator = switcher({
+        dataLink: schema,
+        data,
+        rootData,
+        functions,
+        mode,
+    });
+    let result;
     while (true) {
-        const { done, value } = generator.next(result)
-        result = value
-        if (done) return value
+        const { done, value } = generator.next(result);
+        result = value;
+        if (done) return value;
     }
 }
 
@@ -70,74 +94,108 @@ function syncDataParser ({ schema, data, rootData, functions, mode = MODE.FULL_D
  * @param {number} mode
  * @returns {Generator<*, *, *>}
  */
-function* genDataParser ({ schema, data, rootData, functions, mode = MODE.FULL_DEEP }) {
-    if (!rootData) rootData = data
-    return yield* switcher({ dataLink: schema, data, rootData, functions, mode })
+function* genDataParser({
+    schema,
+    data,
+    rootData,
+    functions,
+    mode = MODE.FULL_DEEP,
+}) {
+    if (!rootData) rootData = data;
+    return yield* switcher({
+        dataLink: schema,
+        data,
+        rootData,
+        functions,
+        mode,
+    });
 }
 
-function* switcher (params) {
-    const { dataLink, mode } = params
+function* switcher(params) {
+    const { dataLink, mode } = params;
     // shallow or deep mode
-    const modeCode = (mode & 0b1100) || 0b1100
+    const modeCode = mode & 0b1100 || 0b1100;
     if (typeof dataLink === 'string') {
-        return yield* dataLinkParser({ ...params, dataLink: getDataLink(dataLink) })
+        return yield* dataLinkParser({
+            ...params,
+            dataLink: getDataLink(dataLink),
+        });
     } else if (isObject(dataLink)) {
-        if (modeCode === 0b1000) return dataLink
-        return yield* objectParser(params)
+        if (modeCode === 0b1000) return dataLink;
+        return yield* objectParser(params);
     } else if (Array.isArray(dataLink)) {
-        if (modeCode === 0b1000) return dataLink
-        return yield* arrayParser(params)
+        if (modeCode === 0b1000) return dataLink;
+        return yield* arrayParser(params);
     } else if (typeof dataLink === 'undefined') {
-        console.warn('[warning] dataParserV5: dataLink is undefined.')
-        return void 0
+        console.warn('[warning] dataParserV5: dataLink is undefined.');
+        return void 0;
     } else {
-        return dataLink
+        return dataLink;
     }
 }
 
-function* arrayParser (params) {
-    const { dataLink } = params
-    const arr = new Array(dataLink.length)
+function* arrayParser(params) {
+    const { dataLink } = params;
+    const arr = new Array(dataLink.length);
     for (let i = 0; i < dataLink.length; i++) {
-        arr[i] = yield* switcher({ ...params, dataLink: dataLink[i] })
+        arr[i] = yield* switcher({ ...params, dataLink: dataLink[i] });
     }
-    return arr
+    return arr;
 }
 
-function* objectParser (params) {
-    const { dataLink, mode } = params
+function* objectParser(params) {
+    const { dataLink, mode } = params;
     // user, core or full mode
-    const modeCode = (mode & 3) || 3
-    let { data } = params
+    const modeCode = mode & 3 || 3;
+    let { data } = params;
     // _computations_ must be skipped on this step.
-    const { _dataLink_, _computations_, _template_, ...others } = dataLink
+    const { _dataLink_, _computations_, _template_, ...others } = dataLink;
     if (_dataLink_) {
-        data = yield* switcher({ ...params, dataLink: _dataLink_, mode: MODE.USER_DEEP })
+        data = yield* switcher({
+            ...params,
+            dataLink: _dataLink_,
+            mode: MODE.USER_DEEP,
+        });
     }
     if (_template_) {
-        if (!Array.isArray(data)) throw new Error('[error] dataParserV5: data must be an array.')
-        const a = []
+        if (!Array.isArray(data))
+            throw new Error('[error] dataParserV5: data must be an array.');
+        const a = [];
         for (const subData of data) {
-            a.push(yield* switcher({ ...params, dataLink: _template_, data: subData }))
+            a.push(
+                yield* switcher({
+                    ...params,
+                    dataLink: _template_,
+                    data: subData,
+                })
+            );
         }
-        return a
+        return a;
     }
-    const result = {}
+    const result = {};
     for (const key of Object.getOwnPropertyNames(others)) {
-        if (modeCode !== 3) { // not full mode
-            if (key[0] === '_' && key[key.length - 1] === '_' && modeCode === 1) continue // core's fields on user mode.
-            if ((key[0] !== '_' || key[key.length - 1] === '_') && modeCode === 2) continue // user's field on core mode.
+        if (modeCode !== 3) {
+            // not full mode
+            if (key[0] === '_' && key[key.length - 1] === '_' && modeCode === 1)
+                continue; // core's fields on user mode.
+            if (
+                (key[0] !== '_' || key[key.length - 1] === '_') &&
+                modeCode === 2
+            )
+                continue; // user's field on core mode.
         }
-        const parsedKey = yield* switcher({ ...params, dataLink: key, data })
-        if (typeof parsedKey !== 'string') throw new Error('[error] dataParserV5: parsedKey must be a string.')
-        result[parsedKey] = yield* switcher({ ...params, dataLink: dataLink[key], data })
+        const parsedKey = yield* switcher({ ...params, dataLink: key, data });
+        if (typeof parsedKey !== 'string')
+            throw new Error(
+                '[error] dataParserV5: parsedKey must be a string.'
+            );
+        result[parsedKey] = yield* switcher({
+            ...params,
+            dataLink: dataLink[key],
+            data,
+        });
     }
-    return result
+    return result;
 }
 
-export {
-    asyncDataParser,
-    syncDataParser,
-    genDataParser,
-    MODE
-}
+export { asyncDataParser, syncDataParser, genDataParser, MODE };

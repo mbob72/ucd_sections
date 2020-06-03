@@ -1,1 +1,1 @@
-export { default as TopSectionV4 } from './v4'
+export { default as TopSectionV4 } from './v4';

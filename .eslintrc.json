@@ -1,23 +1,65 @@
 {
-    "extends": "standard",
-    "parser": "babel-eslint",
-    "plugins": [
-        "react"
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:react/recommended"
     ],
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+        "@typescript-eslint",
+        "react",
+        "react-hooks",
+        "eslint-plugin-import"
+    ],
+    "parserOptions": {
+        "project": [ "./tsconfig.json" ],
+        "ecmaVersion": 2020,
+        "ecmaFeatures": {
+            "jsx": true
+        }
+    },
     "rules": {
-        "indent": ["error", 4, {"SwitchCase": 1}],
+        "indent": "off",
+        "@typescript-eslint/indent": ["error", 4],
+        "brace-style": "off",
+        "@typescript-eslint/brace-style": ["error", "1tbs", {"allowSingleLine": true}],
+        "comma-spacing": "off",
+        "@typescript-eslint/comma-spacing": ["error"],
+        "func-call-spacing": "off",
+        "@typescript-eslint/func-call-spacing": ["error"],
+        "keyword-spacing": "off",
+        "@typescript-eslint/keyword-spacing": ["error"],
+        "lines-between-class-members": "off",
+        "@typescript-eslint/lines-between-class-members": ["error"],
+        "no-extra-parens": "off",
+        "@typescript-eslint/no-extra-parens": ["error"],
+        "no-extra-semi": "off",
+        "@typescript-eslint/no-extra-semi": ["error"],
+        "no-unused-expressions": "off",
+        "@typescript-eslint/no-unused-expressions": ["error"],
+        "quotes": "off",
+        "@typescript-eslint/quotes": ["error", "single"],
+        "array-bracket-spacing": ["error", "always"],
+        "object-curly-spacing": ["error", "always"],
+        "semi": ["error", "always"],
+        "semi-style": ["error", "last"],
+        "semi-spacing": ["error", {"before": false, "after": true}],
+        "no-var": "error",
+        "prefer-arrow-callback": "error",
+        "prefer-rest-params": "error",
         "generator-star-spacing": ["error", {"before": false, "after": true}],
         "yield-star-spacing": ["error", {"before": false, "after": true}],
         "react/jsx-uses-react": "error",
         "react/jsx-uses-vars": "error",
         "camelcase": ["error", {"ignoreDestructuring": true}],
         "prefer-const": ["error", {
-            "destructuring": "any",
+            "destructuring": "all",
             "ignoreReadBeforeAssign": false
         }],
         "no-console": ["error", { "allow": ["warn", "error", "deinfo"] }]
     },
     "env": {
-        "browser": true
+        "browser": true,
+        "es6": true
     }
 }

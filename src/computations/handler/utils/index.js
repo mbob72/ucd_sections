@@ -1,5 +1,3 @@
-import awaitAll from './await_all'
+import awaitAll from './await_all';
 
-export {
-    awaitAll
-}
+export { awaitAll };

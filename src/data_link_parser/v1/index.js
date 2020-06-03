@@ -1,9 +1,6 @@
-import DataLink from './data_link'
-import dataLinkParser from './data_link_parser'
+import DataLink from './data_link';
+import dataLinkParser from './data_link_parser';
 
-export {
-    dataLinkParser,
-    DataLink
-}
+export { dataLinkParser, DataLink };
 
-export default dataLinkParser
+export default dataLinkParser;

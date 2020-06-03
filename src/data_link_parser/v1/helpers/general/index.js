@@ -1,7 +1,4 @@
-import valueParser from './value'
-import spaceSkipping from './space_skipping'
+import valueParser from './value';
+import spaceSkipping from './space_skipping';
 
-export {
-    valueParser,
-    spaceSkipping
-}
+export { valueParser, spaceSkipping };

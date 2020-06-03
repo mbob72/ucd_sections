@@ -1,7 +1,6 @@
-
-import indexParser from './helpers'
-import { DataParserError } from '../../data_parser/utils/data_parser_error'
-import { DataLink } from './index'
+import indexParser from './helpers';
+import { DataParserError } from '../../data_parser/utils/data_parser_error';
+import { DataLink } from './index';
 
 /**
  * Returns a string if the main result is not empty,
@@ -11,8 +10,8 @@ import { DataLink } from './index'
  * @returns {any}
  */
 const setResult = (result, mainResult) => {
-    return (mainResult) ? '' + mainResult + result : result
-}
+    return mainResult ? '' + mainResult + result : result;
+};
 /**
  * Root parser of a data link string,
  * it delegates the work to helper parsers.
@@ -22,13 +21,12 @@ const setResult = (result, mainResult) => {
  * @returns {*}
  */
 const dataLinkParser = (params) => {
-    const {
-        dataLink
-    } = params
-    if (!(dataLink instanceof DataLink)) throw new DataParserError(DataParserError.ERRORS.DATA_LINK_TYPE)
-    let mainResult
-    let result
-    mainResult = null
+    const { dataLink } = params;
+    if (!(dataLink instanceof DataLink))
+        throw new DataParserError(DataParserError.ERRORS.DATA_LINK_TYPE);
+    let mainResult;
+    let result;
+    mainResult = null;
 
     try {
         for (const current of dataLink) {
@@ -39,41 +37,46 @@ const dataLinkParser = (params) => {
                 case '[': // array part
                 case '`': // escaped by the `` symbols string part
                 case '(': // expression part
-                    result = indexParser(params)
-                    mainResult = setResult(result, mainResult)
-                    break
+                    result = indexParser(params);
+                    mainResult = setResult(result, mainResult);
+                    break;
                 case '\\':
                     // escaped by the \ symbol part
-                    mainResult = setResult(current[2], mainResult)
-                    dataLink.getNextValue()
-                    break
+                    mainResult = setResult(current[2], mainResult);
+                    dataLink.getNextValue();
+                    break;
                 case '}':
                 case ']':
                 case ')':
                     // unprocessed close symbols
-                    throw new DataParserError(DataParserError.ERRORS.NESTING)
+                    throw new DataParserError(DataParserError.ERRORS.NESTING);
                 default:
                     // plain symbol
                     // todo: does it need in checking by the inAllowedSymbol function?
-                    mainResult = setResult(current[1], mainResult)
-                    break
+                    mainResult = setResult(current[1], mainResult);
+                    break;
             }
-            if (dataLink.isEnd()) break
+            if (dataLink.isEnd()) break;
         }
     } catch (Err) {
         if (Err instanceof DataParserError) {
-            const info = dataLink.getCursorPositionInfo()
-            Err.fullMessage = Err.message + ', dataLink: "' + info + '" at position ' + dataLink.getCurrentIndex()
+            const info = dataLink.getCursorPositionInfo();
+            Err.fullMessage =
+                Err.message +
+                ', dataLink: "' +
+                info +
+                '" at position ' +
+                dataLink.getCurrentIndex();
             if (dataLink.isEnd()) {
-                Err.fullMessage += ' (out of the string)'
+                Err.fullMessage += ' (out of the string)';
             }
-            Err.data = params.data
+            Err.data = params.data;
         }
-        console.error(Err)
-        throw Err
+        console.error(Err);
+        throw Err;
     }
 
-    return mainResult
-}
+    return mainResult;
+};
 
-export default dataLinkParser
+export default dataLinkParser;

@@ -7,19 +7,19 @@
 const runAsyncGenerator = (iterator, resolve, reject) => {
     const next = (v) => {
         try {
-            const { value, done } = iterator.next(v)
+            const { value, done } = iterator.next(v);
             if (done) {
-                if (value instanceof Promise) value.then(resolve, reject)
-                else resolve(value)
+                if (value instanceof Promise) value.then(resolve, reject);
+                else resolve(value);
             } else {
-                if (value instanceof Promise) value.then(next, reject)
-                else next(value)
+                if (value instanceof Promise) value.then(next, reject);
+                else next(value);
             }
         } catch (e) {
-            reject(e)
+            reject(e);
         }
-    }
-    next()
-}
+    };
+    next();
+};
 
-export default runAsyncGenerator
+export default runAsyncGenerator;

@@ -1,0 +1,22 @@
+{
+	"compilerOptions": {
+		"target": "ES5",
+		"lib": [ "ESNext", "DOM" ],
+		"module": "ESNext",
+        "sourceMap": true,
+        "noImplicitAny": false,
+		"moduleResolution": "node",
+		"allowJs": false,
+		"noEmit": true,
+		"strict": true,
+		"isolatedModules": true,
+		"esModuleInterop": true,
+		"jsx": "react",
+		"baseUrl": "./src",
+		"resolveJsonModule": true,
+		"removeComments": true
+	},
+	"include": [
+		"src/**/*"
+	]
+}

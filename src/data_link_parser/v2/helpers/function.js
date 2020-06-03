@@ -1,6 +1,6 @@
-import { DataParserError } from '../../../data_parser/utils'
-import inAllowedSymbols from '../../utils/in_allowed_symbols'
-import { expressionParser } from './index'
+import { DataParserError } from '../../../data_parser/utils';
+import inAllowedSymbols from '../../utils/in_allowed_symbols';
+import { expressionParser } from './index';
 
 /**
  * The FunctionParser reads a part of the dataLink string
@@ -9,38 +9,39 @@ import { expressionParser } from './index'
  * @returns {*}
  */
 const functionParser = function* (params) {
-    const {
-        dataLink,
-        functions
-    } = params
-    let current = dataLink.getCurrentValue()
+    const { dataLink, functions } = params;
+    let current = dataLink.getCurrentValue();
     if (current[1] !== '$') {
-        throw new DataParserError(DataParserError.ERRORS.ITERATOR_ERROR)
+        throw new DataParserError(DataParserError.ERRORS.ITERATOR_ERROR);
     }
     if (!inAllowedSymbols(current[2])) {
-        throw new DataParserError(DataParserError.ERRORS.FUNCTION_NAMING)
+        throw new DataParserError(DataParserError.ERRORS.FUNCTION_NAMING);
     }
-    current = dataLink.getNextValue()
-    let functionName = ''
+    current = dataLink.getNextValue();
+    let functionName = '';
 
     for (current of dataLink) {
-        functionName += current[1]
-        if (!inAllowedSymbols(current[2])) break
+        functionName += current[1];
+        if (!inAllowedSymbols(current[2])) break;
     }
 
-    const f = functions[functionName]
+    const f = functions[functionName];
     if (typeof f !== 'function') {
-        if (current[2] !== '(' && !dataLink.isEnd() && !inAllowedSymbols(current[2])) {
-            throw new DataParserError(DataParserError.ERRORS.FUNCTION_NAMING)
+        if (
+            current[2] !== '(' &&
+            !dataLink.isEnd() &&
+            !inAllowedSymbols(current[2])
+        ) {
+            throw new DataParserError(DataParserError.ERRORS.FUNCTION_NAMING);
         }
-        throw new DataParserError(DataParserError.ERRORS.FUNCTION_UNKNOWN)
+        throw new DataParserError(DataParserError.ERRORS.FUNCTION_UNKNOWN);
     }
     if (current[2] === '(') {
-        dataLink.getNextValue()
-        return f(...yield* expressionParser(params, true))
+        dataLink.getNextValue();
+        return f(...yield* expressionParser(params, true));
     } else {
-        return f
+        return f;
     }
-}
+};
 
-export default functionParser
+export default functionParser;

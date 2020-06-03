@@ -1,20 +1,21 @@
 export const DataParserError = (() => {
-    function DataParserError (message, data) {
-        Error.apply(this, arguments)
-        this.name = 'DataParserError'
-        this.message = message || 'DataParserError'
-        this.data = data
-        if (typeof Error.captureStackTrace === 'function') { // may not exist
-            this.stack = Error.captureStackTrace(this, DataParserError)
+    function DataParserError(message, data) {
+        Error.apply(this, arguments);
+        this.name = 'DataParserError';
+        this.message = message || 'DataParserError';
+        this.data = data;
+        if (typeof Error.captureStackTrace === 'function') {
+            // may not exist
+            this.stack = Error.captureStackTrace(this, DataParserError);
         } else {
-            this.stack = (new Error()).stack
+            this.stack = new Error().stack;
         }
     }
 
-    DataParserError.prototype = Object.create(Error.prototype)
-    DataParserError.prototype.constructor = DataParserError
-    return DataParserError
-})()
+    DataParserError.prototype = Object.create(Error.prototype);
+    DataParserError.prototype.constructor = DataParserError;
+    return DataParserError;
+})();
 
 DataParserError.ERRORS = {
     DATA_LINK_TYPE: 'The dataLink must be an instance of the DataLink!',
@@ -35,5 +36,5 @@ DataParserError.ERRORS = {
     INDEX_LAST: 'Index should be the last part of the link',
     INDEX_NAME: 'Index name contains disallowed symbols',
     INDEX_EMPTY: 'Index name must be a non empty string',
-    INDEX_NOT_ARRAY_DATA: 'Only array may be indexed'
-}
+    INDEX_NOT_ARRAY_DATA: 'Only array may be indexed',
+};

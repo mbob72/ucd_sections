@@ -1,7 +1,10 @@
-const path = require('path')
+import path from "path";
+import { Configuration } from "webpack";
+import autoprefixer from "autoprefixer";
+import ForkTsCheckerWebpackPlugin from "fork-ts-checker-webpack-plugin";
 
-module.exports = {
-    entry: './src/index.js',
+const Config = (): Configuration => ({
+    entry: './src/index.ts',
     output: {
         path: path.join(__dirname, './lib'),
         filename: 'index.js',
@@ -9,16 +12,22 @@ module.exports = {
     },
     mode: 'production',
     resolve: {
-        extensions: [ '.scss', '.sass', '.css', '.js', '.jsx', '.ts', '.tsx' ]
+        extensions: [ '.scss', '.sass', '.css', '.ts', '.tsx', '.js', '.jsx' ]
     },
+    plugins: [
+        new ForkTsCheckerWebpackPlugin({eslint: true})
+    ],
     module: {
         rules: [
             {
-                test: /\.jsx?$/,
+                test: /\.tsx?$/,
                 exclude: [ /node_modules/ ],
                 use: {
-                    loader: 'babel-loader'
-                 }
+                    loader: 'ts-loader'
+                },
+                options: {
+                    transpileOnly: true
+                }
             },
             {
                 test: /\.s[ac]ss$/,
@@ -37,7 +46,7 @@ module.exports = {
                         loader: 'postcss-loader',
                         options: {
                             plugins: [
-                                require('autoprefixer')()
+                                autoprefixer()
                             ],
                             sourceMap: true
                         }
@@ -52,4 +61,6 @@ module.exports = {
             }
         ]
     }
-}
+});
+
+export default Config

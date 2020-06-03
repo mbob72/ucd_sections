@@ -1,11 +1,11 @@
-import arrayParser from './array'
-import expressionParser from './expression'
-import functionParser from './function'
-import linkParser from './link'
-import objectParser from './object'
-import escapedPlainParser from './plain'
-import { DataParserError } from '../../../data_parser/utils/data_parser_error'
-import DataLink from '../data_link'
+import arrayParser from './array';
+import expressionParser from './expression';
+import functionParser from './function';
+import linkParser from './link';
+import objectParser from './object';
+import escapedPlainParser from './plain';
+import { DataParserError } from '../../../data_parser/utils/data_parser_error';
+import DataLink from '../data_link';
 
 export {
     arrayParser,
@@ -13,8 +13,8 @@ export {
     functionParser,
     linkParser,
     objectParser,
-    escapedPlainParser
-}
+    escapedPlainParser,
+};
 
 /**
  * The IndexParser is the main parser controller
@@ -23,25 +23,26 @@ export {
  * @returns {*}
  */
 const indexParser = (params) => {
-    const { dataLink } = params
-    if (!(dataLink instanceof DataLink)) throw new DataParserError(DataParserError.ERRORS.DATA_LINK_TYPE)
-    const symbol = dataLink.getCurrentValue()[1]
+    const { dataLink } = params;
+    if (!(dataLink instanceof DataLink))
+        throw new DataParserError(DataParserError.ERRORS.DATA_LINK_TYPE);
+    const symbol = dataLink.getCurrentValue()[1];
     switch (symbol) {
         case '@': // link part
-            return linkParser(params)
+            return linkParser(params);
         case '$': // function part
-            return functionParser(params)
+            return functionParser(params);
         case '{': // object part
-            return objectParser(params)
+            return objectParser(params);
         case '[': // array part
-            return arrayParser(params)
+            return arrayParser(params);
         case '`': // escaped by the `` symbols string part
-            return escapedPlainParser(params)
+            return escapedPlainParser(params);
         case '(': // expression part
-            return expressionParser(params)
+            return expressionParser(params);
         default:
-            throw new DataParserError(DataParserError.ERRORS.DEFAULT)
+            throw new DataParserError(DataParserError.ERRORS.DEFAULT);
     }
-}
+};
 
-export default indexParser
+export default indexParser;

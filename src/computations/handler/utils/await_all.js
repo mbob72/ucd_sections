@@ -1,5 +1,5 @@
-import ValidationError from '../errors/validation_error'
-import BreakPromiseChainError from '../errors/break_promise_chain_error'
+import ValidationError from '../errors/validation_error';
+import BreakPromiseChainError from '../errors/break_promise_chain_error';
 
 /**
  * This method returns a promise, that awaits for all promise chains of the current form.
@@ -7,41 +7,44 @@ import BreakPromiseChainError from '../errors/break_promise_chain_error'
  * @returns {{rejectCallback: null, promise: Promise<Object[]>}}
  */
 const awaitAll = (chains) => {
-    let rejectControlPromise = null
+    let rejectControlPromise = null;
     const controlPromise = new Promise((resolve, reject) => {
-        rejectControlPromise = reject
-    })
-    const promises = []
+        rejectControlPromise = reject;
+    });
+    const promises = [];
     for (let i = 0; i < chains.length; i++) {
-        const chain = chains[i]
+        const chain = chains[i];
         const promise = new Promise((resolve) => {
             if (chain instanceof Promise) {
                 chain.then(
                     (value) => {
-                        resolve({ status: 'success', data: value })
+                        resolve({ status: 'success', data: value });
                     },
                     (error) => {
-                        let status = 'unknownError'
+                        let status = 'unknownError';
                         switch (true) {
                             case error instanceof ValidationError:
-                                status = 'validationError'
-                                break
+                                status = 'validationError';
+                                break;
                             case error instanceof BreakPromiseChainError:
-                                status = 'breakError'
-                                break
+                                status = 'breakError';
+                                break;
                         }
-                        resolve({ status, error })
+                        resolve({ status, error });
                     }
-                )
-            } else throw new Error('SectionsComputation: chains must contain only promises.')
-        })
-        promises.push(promise)
+                );
+            } else
+                throw new Error(
+                    'SectionsComputation: chains must contain only promises.'
+                );
+        });
+        promises.push(promise);
     }
 
-    const awaitPromise = Promise.all(promises)
-    const mainPromise = Promise.race([ controlPromise, awaitPromise ])
+    const awaitPromise = Promise.all(promises);
+    const mainPromise = Promise.race([ controlPromise, awaitPromise ]);
 
-    return { rejectCallback: rejectControlPromise, promise: mainPromise }
-}
+    return { rejectCallback: rejectControlPromise, promise: mainPromise };
+};
 
-export default awaitAll
+export default awaitAll;

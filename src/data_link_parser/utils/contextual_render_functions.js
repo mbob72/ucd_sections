@@ -1,6 +1,6 @@
-import isObject from './is_object'
+import isObject from './is_object';
 
-function getContextualConstructor () {
+function getContextualConstructor() {
     /**
      * This constructor defines a runtime context with the values, props and setValues.
      * The computations and validations are need in these params.
@@ -11,12 +11,15 @@ function getContextualConstructor () {
      * @param {Function} setValues - a method that is used to update the state.
      * @constructor
      */
-    return function ContextualRenderFunctions (values, props, setValues) {
-        if (!new.target) throw new Error('ContextualRenderFunctions: Must be invoked as a constructor!')
-        this.values = values
-        this.props = props
-        this.setValues = setValues
-    }
+    return function ContextualRenderFunctions(values, props, setValues) {
+        if (!new.target)
+            throw new Error(
+                'ContextualRenderFunctions: Must be invoked as a constructor!'
+            );
+        this.values = values;
+        this.props = props;
+        this.setValues = setValues;
+    };
 }
 
 /**
@@ -25,12 +28,18 @@ function getContextualConstructor () {
  *                               (these are usually the computations, validations and renderFunctions).
  * @returns {FunctionConstructor}
  */
-export function composeContextualRenderFunctions (...args) {
-    if (!args.length) throw new Error('composeContextualRenderFunctions: at least one object with functions must be passed!')
-    const joinedRF = args.reduce((acc, arg) => ({ ...acc, ...arg }), {})
-    const ContextualRenderFunctions = getContextualConstructor()
-    ContextualRenderFunctions.prototype = { ...joinedRF, constructor: ContextualRenderFunctions.prototype.constructor }
-    return ContextualRenderFunctions
+export function composeContextualRenderFunctions(...args) {
+    if (!args.length)
+        throw new Error(
+            'composeContextualRenderFunctions: at least one object with functions must be passed!'
+        );
+    const joinedRF = args.reduce((acc, arg) => ({ ...acc, ...arg }), {});
+    const ContextualRenderFunctions = getContextualConstructor();
+    ContextualRenderFunctions.prototype = {
+        ...joinedRF,
+        constructor: ContextualRenderFunctions.prototype.constructor,
+    };
+    return ContextualRenderFunctions;
 }
 
 /**
@@ -38,10 +47,10 @@ export function composeContextualRenderFunctions (...args) {
  * @param {Object} object
  * @returns {boolean}
  */
-export function isContextualRenderFunctions (object) {
+export function isContextualRenderFunctions(object) {
     if (isObject(object)) {
-        const proto = Object.getPrototypeOf(object)
-        return proto.constructor.name === 'ContextualRenderFunctions'
+        const proto = Object.getPrototypeOf(object);
+        return proto.constructor.name === 'ContextualRenderFunctions';
     }
-    return false
+    return false;
 }
