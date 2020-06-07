@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { isEmpty, isFunction, strictlyIsObject } from '../../utils';
 import {
     isDataLink,
@@ -10,6 +11,9 @@ import * as renderFunctions from '../../computations/index';
 import { linkParser } from '../../data_link_parser/v1/helpers';
 import incrementGenerator from '../utils/increment_generator';
 import deepMerge from '../../utils/deep_merge';
+import { DataParserInterfaces, SchemaInterfaces } from 'types/types';
+import DataParserV4 = DataParserInterfaces.v4.Preprocessor;
+import { ProcessedObject } from 'utils/types';
 
 // todo: this file must be removed. All schemas should be parsed inside the sections logic. Schema pre-processing is very difficult for maintenance.
 
@@ -25,22 +29,12 @@ const SECTIONS_MODE = 'sectionsMode';
 
 const DATA_OBJECT_ID = Symbol.for('_objectId_');
 const objectIdGenerator = incrementGenerator();
-const templateIndexNames = [];
+const templateIndexNames: Array<string> = [];
 
 /**
- * Type definition for IDE.
- * @typedef {Object} Params
- * @property {Object|Array|string} dataLink
- * @property {Object|Array} data
- * @property {string} [dataPath]
- * @property {Object} [renderFunctions]
- */
-/**
  * Entry point of the dataParser.
- * @param {Params} params
- * @returns {{ schema: {Object}, context: {Object} }}
  */
-const dataParser = (params) => {
+const dataParser = (params: DataParserV4.ParserParamsEntry): { schema: Record<string, any>, context: Record<string | symbol, any> } => {
     params.renderFunctions =
         params.renderFunctions || dataParser.renderFunctions || {};
     let { data } = params;
@@ -60,7 +54,7 @@ const dataParser = (params) => {
             'DataParserV4: schemaPath must be a string and starts with \'#/\' symbols.'
         );
     const context = {};
-    const parsed = switcher({
+    const parsed = switcher(<DataParserV4.ParserParamsAny>{
         ...params,
         rootData,
         dataPath,
@@ -76,19 +70,20 @@ dataParser.renderFunctions = renderFunctions;
  * @param {Params} params
  * @returns {any[]|null|Array|*}
  */
-const switcher = (params) => {
+const switcher = (params: DataParserV4.ParserParamsAny): any => {
     const { dataLink, data } = params;
     // todo: the next line should be refactored.
     if (dataLink === void 0) return data;
     // warning: the next line has been commented. It may cause errors.
     // if (isEmpty(data)) return null
     if (strictlyIsObject(dataLink)) {
-        if ('_template_' in dataLink) return templateParser(params);
-        return objectParser(params);
+        const { _template_ } = <SchemaInterfaces.GeneralSchemaObjectInterface>dataLink;
+        if (_template_) return templateParser(<DataParserV4.ParserParamsObject>params);
+        return objectParser(<DataParserV4.ParserParamsObject>params);
     }
-    if (Array.isArray(dataLink)) return arrayParser(params);
+    if (Array.isArray(dataLink)) return arrayParser(<DataParserV4.ParserParamsArray>params);
     if (typeof dataLink === 'string' && dataLink && isDataLink(dataLink))
-        return stringParser(params);
+        return stringParser(<DataParserV4.ParserParamsString>params);
     return dataLink;
 };
 
@@ -98,7 +93,7 @@ const switcher = (params) => {
  * @param {string|null} mode
  * @return {any[]}
  */
-const arrayParser = (params, mode = null) => {
+const arrayParser = (params: DataParserV4.ParserParamsArray, mode: string | null = null) => {
     const { dataLink } = params;
     if (!Array.isArray(dataLink))
         throw new Error('DataParserV4: dataLink should be an array');
@@ -107,8 +102,8 @@ const arrayParser = (params, mode = null) => {
         if (strictlyIsObject(dataLink[i])) {
             dataLink[i] = Object.create(
                 {},
-                {
-                    ...Object.getOwnPropertyDescriptors(dataLink[i]),
+                <PropertyDescriptorMap>{
+                    ...Object.getOwnPropertyDescriptors(<SchemaInterfaces.GeneralSchemaObjectInterface>dataLink[i]),
                     _objectId_: {
                         value: objectIdGenerator.get(),
                         writable: false,
@@ -128,7 +123,7 @@ const arrayParser = (params, mode = null) => {
                     throw new Error(
                         'DataLinkParserV4: array item must be an object (fields mode).'
                     );
-                arr[i] = fieldParser({ ...params, dataLink: dataLink[i] });
+                arr[i] = fieldParser(<DataParserV4.ParserParamsObject>{ ...params, dataLink: dataLink[i] });
                 break;
             }
             case SECTIONS_MODE: {
@@ -136,11 +131,11 @@ const arrayParser = (params, mode = null) => {
                     throw new Error(
                         'DataLinkParserV4: array item must be an object (sections mode).'
                     );
-                arr[i] = objectParser({ ...params, dataLink: dataLink[i] });
+                arr[i] = objectParser(<DataParserV4.ParserParamsObject>{ ...params, dataLink: dataLink[i] });
                 break;
             }
             default:
-                arr[i] = switcher({ ...params, dataLink: dataLink[i] });
+                arr[i] = switcher(<DataParserV4.ParserParamsAny>{ ...params, dataLink: dataLink[i] });
         }
     }
     return arr;
@@ -151,8 +146,8 @@ const arrayParser = (params, mode = null) => {
  * @param {Params} params
  * @return Object
  */
-const objectParser = (params) => {
-    const { dataLink } = params;
+const objectParser = (params: DataParserV4.ParserParamsObject): Record<string, any> => {
+    const { dataLink }: { dataLink: SchemaInterfaces.GeneralSchemaObjectInterface & { _defaultData_?: Record<string, any>, _objectId_?: number } } = params;
     let { dataPath, rootData, data } = params;
     const {
         _sections_,
@@ -165,7 +160,7 @@ const objectParser = (params) => {
     if (_defaultData_) {
         const newData = isEmpty(data)
             ? _defaultData_
-            : deepMerge(_defaultData_, data);
+            : deepMerge(_defaultData_, <ProcessedObject>data);
         if (data === rootData) {
             rootData = newData;
         }
@@ -180,7 +175,7 @@ const objectParser = (params) => {
         }));
     const result = Object.create(
         {},
-        {
+        <PropertyDescriptorMap>{
             ...Object.getOwnPropertyDescriptors(others),
             _objectId_: {
                 value: _objectId_ || objectIdGenerator.get(),
@@ -192,12 +187,12 @@ const objectParser = (params) => {
     if (_sections_) {
         if (strictlyIsObject(_sections_)) {
             result._sections_ = templateParser(
-                { ...params, dataLink: _sections_, data, rootData, dataPath },
+                <DataParserV4.ParserParamsObject>{ ...params, dataLink: _sections_, data, rootData, dataPath },
                 SECTIONS_MODE
             );
         } else if (Array.isArray(_sections_)) {
             result._sections_ = arrayParser(
-                { ...params, dataLink: _sections_, data, rootData, dataPath },
+                <DataParserV4.ParserParamsArray>{ ...params, dataLink: _sections_, data, rootData, dataPath },
                 SECTIONS_MODE
             );
         } else
@@ -208,12 +203,12 @@ const objectParser = (params) => {
     if (_fields_) {
         if (strictlyIsObject(_fields_)) {
             result._fields_ = templateParser(
-                { ...params, dataLink: _fields_, data, rootData, dataPath },
+                <DataParserV4.ParserParamsObject>{ ...params, dataLink: _fields_, data, rootData, dataPath },
                 FIELDS_MODE
             );
         } else if (Array.isArray(_fields_)) {
             result._fields_ = arrayParser(
-                { ...params, dataLink: _fields_, data, rootData, dataPath },
+                <DataParserV4.ParserParamsArray>{ ...params, dataLink: _fields_, data, rootData, dataPath },
                 FIELDS_MODE
             );
         } else
@@ -235,27 +230,24 @@ const objectParser = (params) => {
 
 /**
  * Parses a field object.
- * @param {Params} params
- * @return {Object}
  */
-const fieldParser = (params) => {
+const fieldParser = (params: DataParserV4.ParserParamsObject): Record<string, any> => {
     const { dataLink, context } = params;
     const {
         _value_,
-        _defaultValue_,
         _objectId_,
         _computations_,
         _sections_,
         _fields_,
         ...others
-    } = dataLink;
+    } = <SchemaInterfaces.GeneralSchemaObjectInterface & { _objectId_?: number }>dataLink;
     if (_sections_ || _fields_)
         throw new Error(
             'DataParserV4: field must be the end point object of a schema.'
         );
     const result = Object.create(
         {},
-        {
+        <PropertyDescriptorMap>{
             ...Object.getOwnPropertyDescriptors(others),
             _objectId_: {
                 value: _objectId_ || objectIdGenerator.get(),
@@ -279,8 +271,7 @@ const fieldParser = (params) => {
                 );
             // _defaultValue_ field should contain a primitive value. todo: in future, it might be a dynamically evaluated value
             result['_value_'] = stringParser(
-                { ...params, dataLink: _value_ },
-                _defaultValue_
+                { ...params, dataLink: _value_ }
             );
         } else result['_value_'] = _value_;
     }
@@ -288,7 +279,7 @@ const fieldParser = (params) => {
     context[Symbol.for(result._objectId_)] = {};
     if (strictlyIsObject(_computations_)) {
         if (!isFunction(_value_)) {
-            result._computations_ = computationsParser({
+            result._computations_ = computationsParser(<DataParserV4.ParserParamsComputations>{
                 ...params,
                 dataLink: _computations_,
             });
@@ -304,18 +295,15 @@ const fieldParser = (params) => {
  * @param params
  * @return {Object}
  */
-const computationsParser = (params) => {
+const computationsParser = (params: DataParserV4.ParserParamsComputations) => {
     const { dataLink } = params;
     const {
-        _initial_ = [], // todo: not implemented.
-        _before_ = [], // todo: not implemented.
         _handlers_ = {},
         _after_ = [],
-        _unmount_ = [], // todo: not implemented.
     } = dataLink;
     const eventTypes = Object.getOwnPropertyNames(_handlers_);
     if (!eventTypes.length) return {};
-    const computations = {
+    const computations: { _after_: Array<string>, _handlers_: Record<string, Array<string | Record<string, any>>> } = {
         _handlers_: {},
         _after_: [],
     };
@@ -339,7 +327,7 @@ const computationsParser = (params) => {
             );
     }
     if (Array.isArray(_after_) && _after_.length) {
-        computations._after_ = actionsParser({ ...params, dataLink: _after_ });
+        computations._after_ = <Array<string>>actionsParser({ ...params, dataLink: _after_ });
     } else if (typeof _after_ === 'string' && isFunctionCall(_after_)) {
         computations._after_ = [ stringParser({ ...params, dataLink: _after_ }) ];
     } else if (!Array.isArray(_after_))
@@ -356,13 +344,13 @@ const computationsParser = (params) => {
  * @param params
  * @returns {[]}
  */
-const actionsParser = (params) => {
+const actionsParser = (params: DataParserV4.ParserParamsArray): Array<string | Record<string, any>> => {
     const { dataLink } = params;
-    const actions = [];
+    const actions: Array<string | Record<string, any>> = [];
     for (const action of dataLink) {
         // if (typeof action !== 'string' || !isFunctionCall(action)) throw new Error('DataParserV4: Computation must be a renderFunction string.')
         if (strictlyIsObject(action)) {
-            actions.push(objectParser({ ...params, dataLink: action }));
+            actions.push(objectParser(<DataParserV4.ParserParamsObject>{ ...params, dataLink: <Record<string, any>>action }));
         } else if (typeof action === 'string') {
             actions.push(stringParser({ ...params, dataLink: action }));
         } else
@@ -381,7 +369,7 @@ const actionsParser = (params) => {
  * @param {string|null} mode
  * @returns {Array}
  */
-const templateParser = (params, mode = null) => {
+const templateParser = (params: DataParserV4.ParserParamsObject, mode: string | null = null) => {
     const { dataLink, rootData, context, meta, tokens = {} } = params;
     const { _template_, _dataLink_ } = dataLink;
     if (!_template_) {
@@ -399,7 +387,7 @@ const templateParser = (params, mode = null) => {
         );
     }
     if (_dataLink_.endsWith('>')) {
-        const index = _dataLink_.split('/').pop();
+        const index = <string>_dataLink_.split('/').pop();
         const indexName = index.substring(1, index.length - 1);
         templateIndexNames.push(indexName);
     }
@@ -410,7 +398,7 @@ const templateParser = (params, mode = null) => {
     if (!Array.isArray(data)) {
         throw new Error('DataParserV4: data for a template must be an array.');
     }
-    if (!context.hasOwnProperty(Symbol.for(dataPath))) {
+    if (!Object.prototype.hasOwnProperty.call(context, Symbol.for(dataPath))) {
         // Save the template schema and the current dataPath for item adding functionality.
         // It is written under a Symbol key to prevent processing on submitting data.
         context[Symbol.for(dataPath)] = {
@@ -418,7 +406,7 @@ const templateParser = (params, mode = null) => {
             schemaTemplate: _template_,
         };
     }
-    const result = [];
+    const result: Array<any> = [];
     for (let i = 0; i < data.length; i++) {
         const item = data[i];
         if (!strictlyIsObject(item) && !Array.isArray(item)) {
@@ -433,8 +421,8 @@ const templateParser = (params, mode = null) => {
         if (strictlyIsObject(_template_)) {
             newDataLink = Object.create(
                 {},
-                {
-                    ...Object.getOwnPropertyDescriptors(_template_),
+                <PropertyDescriptorMap>{
+                    ...Object.getOwnPropertyDescriptors(<SchemaInterfaces.GeneralSchemaObjectInterface>_template_),
                     _objectId_: {
                         value: objectId,
                         writable: false,
@@ -478,11 +466,8 @@ const templateParser = (params, mode = null) => {
 /**
  * Replaces all links to context keys,
  * reads values of all links from data and write them to the context.
- * @param {Params} params
- * @param {*} defaultValue
- * @return {string}
  */
-const stringParser = (params, defaultValue = null) => {
+const stringParser = (params: DataParserV4.ParserParamsString): any => {
     const {
         data,
         rootData,
@@ -520,7 +505,7 @@ const stringParser = (params, defaultValue = null) => {
             }
             const contextKey = isRootLink(link)
                 ? link
-                : mergeLinks({ dataPath, link });
+                : mergeLinks(<{ dataPath: string, link: string }>{ dataPath, link });
             if (value !== undefined) context[contextKey] = value;
             const escapedContextKey = contextKey.replace(
                 /(?<!\\)([@/])/g,
@@ -539,25 +524,25 @@ const replaceTokens = (link, tokens, rootData, dataPath) => {
     return mergeLinks({ dataPath, link: '@' + newLink });
 };
 
-const getNewParts = (parts, tokens, data) => {
-    const newParts = [];
+const getNewParts = (parts: Array<string>, tokens: Record<string, string | number>, data) => {
+    const newParts: Array<string> = [];
     parts.reduce(
-        (acc, part, index, parts) => {
-            if (part.startsWith(':')) {
-                const token = part.substring(1);
+        (acc, part: string | number) => {
+            if ((<string>part).startsWith(':')) {
+                const token = (<string>part).substring(1);
                 part = tokens[token];
                 acc.data = acc.data[part];
                 if (templateIndexNames.includes(token)) {
-                    if (!acc.data.hasOwnProperty(DATA_OBJECT_ID))
+                    if (!Object.prototype.hasOwnProperty.call(acc.data, DATA_OBJECT_ID))
                         throw new Error(
                             'DataParserV4: object must contain _objectId_ param.'
                         );
                     acc.newParts.push(acc.data[DATA_OBJECT_ID]);
-                } else acc.newParts.push(part);
+                } else acc.newParts.push(<string>part);
                 return acc;
             }
             acc.data = acc.data[part];
-            acc.newParts.push(part);
+            acc.newParts.push(<string>part);
             return acc;
         },
         { newParts, data }
@@ -568,12 +553,8 @@ const getNewParts = (parts, tokens, data) => {
 /**
  * Creates an absolute link to data,
  * returned string that contains escaped the dog symbol and slashes.
- * @param {string} dataPath
- * @param {string} link
- * @param [{string|number}] middle
- * @return {string}
  */
-const mergeLinks = ({ dataPath, link = '', middle }) => {
+const mergeLinks = ({ dataPath, link = '', middle }: { dataPath: string, link: string, middle?: string | number }): string => {
     if (isRootLink(link)) return link;
     if (!dataPath) dataPath = '@/';
     return (
@@ -590,7 +571,7 @@ const mergeLinks = ({ dataPath, link = '', middle }) => {
  * @param {boolean} shouldBeAdded
  * @return {{data: {Object}, dataPath: {string}}}
  */
-const parseDataLink = (params, shouldBeAdded = false) => {
+const parseDataLink = (params: DataParserV4.ParserParamsString, shouldBeAdded = false) => {
     const { dataLink, rootData, context, renderFunctions, tokens } = params;
     let { data, dataPath } = params;
     if (typeof dataLink !== 'string' || !isLink(dataLink))
@@ -598,7 +579,7 @@ const parseDataLink = (params, shouldBeAdded = false) => {
     const pureDataLink = /<[a-zA-Z0-9_]+>$/.test(dataLink)
         ? dataLink.replace(/\/<.+>$/, '')
         : dataLink;
-    dataPath = mergeLinks({ dataPath, link: pureDataLink });
+    dataPath = mergeLinks(<{ dataPath: string, link: string }>{ dataPath, link: pureDataLink });
     data = linkParser({
         dataLink: getDataLink(dataLink),
         data,
@@ -606,7 +587,7 @@ const parseDataLink = (params, shouldBeAdded = false) => {
         renderFunctions,
         tokens,
     });
-    if (shouldBeAdded && !context.hasOwnProperty(dataPath))
+    if (shouldBeAdded && !Object.prototype.hasOwnProperty.call(context, dataPath))
         context[pureDataLink] = data;
     return { dataPath, data };
 };
@@ -618,12 +599,12 @@ const parseDataLink = (params, shouldBeAdded = false) => {
  * @returns {{ schema: {Object}, context: {Object} }} - the schema is parsed template,
  *                                                      the context is a new context only with new keys it should be merged with the main context.
  */
-export const templateAddInfo = ({ dataPath = '@/', template }) => {
+export const templateAddInfo = ({ dataPath = '@/', template }: { dataPath: string, template: any }): any => {
     if (!dataPath || typeof dataPath !== 'string' || !isLink(dataPath))
         throw new Error('DataParserV4: dataPath must be a string.');
     if (!strictlyIsObject(template))
         throw new Error('DataParserV4: template must be an object.');
-    return dataParser({ dataLink: template, dataPath, data: {} });
+    return dataParser(<DataParserV4.ParserParamsEntry>{ dataLink: template, dataPath, data: {} });
 };
 /**
  * Returns a list of keys of the main context that must be deleted.
@@ -631,7 +612,7 @@ export const templateAddInfo = ({ dataPath = '@/', template }) => {
  * @param {Object} context
  * @returns {string[]}
  */
-export const templateDeleteInfo = (dataLink, context) => {
+export const templateDeleteInfo = (dataLink: string, context: Record<string | symbol, any>): Array<string> => {
     // todo: should return keys for deletion by a computation function. Now it changes the context directly.
     if (!dataLink || typeof dataLink !== 'string' || !isLink(dataLink))
         return [];

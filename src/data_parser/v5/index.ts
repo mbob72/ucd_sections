@@ -7,8 +7,6 @@ import runAsyncGenerator from '../utils/run_async_generator';
 import { DataParserInterfaces } from 'types/types';
 import DataParserV5 = DataParserInterfaces.v5;
 
-// todo: tokens, defaultData, _index_ and _objectId_ processing must be added.
-
 /**
  * Parsing mode.
  * In the core mode only fields /^_.+?_$/ must be parsed.
@@ -28,12 +26,6 @@ const MODE = {
 
 /**
  * Asynchronous data parser.
- * @param {string|object|array} schema
- * @param {object|array} data
- * @param {object|array} rootData
- * @param {object} functions
- * @param {number} mode
- * @returns {Promise<*>}
  */
 function asyncDataParser({ schema, data, rootData, defaultData, functions, tokens, mode = MODE.FULL_DEEP }: DataParserV5.EntryParams): Promise<any> {
     return new Promise((resolve, reject) => {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Type definition for IDE.
  * @typedef {Object} Params
@@ -10,6 +11,8 @@ import { isEmpty, strictlyIsObject } from '../../utils';
 import dataLinkParser from '../../data_link_parser/v1';
 import getDataLink from '../utils/data_link_cache';
 import { isDataLink } from '../../data_link_parser/utils';
+import { DataParserInterfaces, SchemaCallbackCollection, SchemaInterfaces } from 'types/types';
+import DataParserV4 = DataParserInterfaces.v4;
 
 /**
  * This parser parses only fields with a syntax string.
@@ -18,7 +21,7 @@ import { isDataLink } from '../../data_link_parser/utils';
  * @param data
  * @param renderFunctions
  */
-const parseSchemaFields = (schema, data, renderFunctions) => {
+const parseSchemaFields = (schema: SchemaInterfaces.GeneralSchemaObjectInterface, data: Record<string, any>, renderFunctions: SchemaCallbackCollection): Record<string, any> => {
     const schm = { ...schema };
     for (const key of Object.getOwnPropertyNames(schm)) {
         if (typeof schm[key] !== 'string' || !isDataLink(schm[key])) continue;
@@ -39,7 +42,7 @@ const parseSchemaFields = (schema, data, renderFunctions) => {
  * @param {{renderFunctions: *, data: *, dataLink: *}} params
  * @returns {*}
  */
-const simpleDataParser = (params) => {
+const simpleDataParser = (params: DataParserV4.ParserParamsAny): any => {
     const { data } = params;
     let { rootData } = params;
     if (!rootData) rootData = data;
@@ -51,12 +54,12 @@ const simpleDataParser = (params) => {
  * @param {Params} params
  * @returns {any[]|null|Array|*}
  */
-const switcher = (params) => {
+const switcher = (params: DataParserV4.ParserParamsAny): any => {
     const { dataLink, data } = params;
     if (dataLink === void 0) return data;
     if (isEmpty(data)) return null;
-    if (strictlyIsObject(dataLink)) return objectParser(params);
-    if (Array.isArray(dataLink)) return arrayParser(params);
+    if (strictlyIsObject(dataLink)) return objectParser(<DataParserV4.ParserParamsObject>params);
+    if (Array.isArray(dataLink)) return arrayParser(<DataParserV4.ParserParamsArray>params);
     if (typeof dataLink === 'string')
         return dataLinkParser({ ...params, dataLink: getDataLink(dataLink) });
     return dataLink;
@@ -67,7 +70,7 @@ const switcher = (params) => {
  * @param {Params} params
  * @return {any[]}
  */
-const arrayParser = (params) => {
+const arrayParser = (params: DataParserV4.ParserParamsArray): Array<any> => {
     /** @type {Array<Object>} dataLink */
     const { dataLink } = params;
     const arr = new Array(dataLink.length);
@@ -81,18 +84,12 @@ const arrayParser = (params) => {
  * @param {Params} params
  * @return Object
  */
-const objectParser = (params) => {
+const objectParser = (params: DataParserV4.ParserParamsObject): Record<string, any> => {
     const { dataLink } = params;
     let { data } = params;
     // these fields must be skipped they are only for system processing.
-    const {
-        _dataLink_,
-        _computations_,
-        _template_,
-        _sections_,
-        _fields_,
-        ...others
-    } = dataLink;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { _dataLink_, _computations_, _template_, _sections_, _fields_, ...others } = dataLink;
     if (_dataLink_ && typeof _dataLink_ === 'string')
         data = dataLinkParser({ ...params, dataLink: _dataLink_ });
     const result = {};
@@ -106,7 +103,7 @@ const objectParser = (params) => {
     return result;
 };
 
-const parseKey = (params) => {
+const parseKey = (params:DataParserV4.ParserParamsString): any => {
     let { dataLink } = params;
     if (isDataLink(dataLink)) {
         dataLink = dataLinkParser({

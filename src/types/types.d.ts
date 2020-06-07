@@ -124,7 +124,7 @@ export namespace SectionInterfaces {
             }
 
             export interface ParsedSchema {
-                _objectId_: number,
+                readonly _objectId_?: number,
                 _type_?: string,
                 _sections_?: SchemaInterfaces.Section | SchemaInterfaces.Template,
                 _fields_?: SchemaInterfaces.Field | SchemaInterfaces.Template,
@@ -169,7 +169,7 @@ export namespace SectionInterfaces {
             }
 
             export interface ParsedSchema {
-                _objectId_: number,
+                readonly _objectId_?: number,
                 _type_?: string,
                 _visible_?: string | boolean,
                 _value_?: string,
@@ -208,8 +208,8 @@ export namespace ComputationsInterfaces {
     export interface ComputationEnvironment {
         currentSchemaObject: Record<string, any>,
         updateState: (context: DataContext) => void,
-        schema: Record<string, Array<any> | Record<string, any>>,   // full schema object
-        context: DataContext,                                               // deep copy of the context
+        schema: Record<string, Array<any> | Record<string, any>>,           // full schema object
+        context: DataContext,                                               // deep copy of the context (data)
         computations: SchemaCallbackCollection,
         location: Location,                                                 // window.location
         match: any // todo: needs to be clarified...
@@ -217,7 +217,66 @@ export namespace ComputationsInterfaces {
 }
 
 export namespace DataParserInterfaces {
-    export namespace v4 {}
+    export namespace v4 {
+        interface GeneralParamsInterface {
+            data: DataContext,
+            rootData?: DataContext,
+            renderFunctions: SchemaCallbackCollection,
+            tokens?: Record<string, string | number>,
+            defaultData?: any
+        }
+        export namespace Preprocessor {
+            interface GeneralPreprocessorParamsInterface extends GeneralParamsInterface {
+                dataPath?: string,
+                schemaPath?: Array<string>,
+                meta?: Record<string, any>
+            }
+
+            export interface ParserParamsEntry extends GeneralPreprocessorParamsInterface {
+                dataLink: Record<string, any>
+            }
+
+            interface Inner extends GeneralPreprocessorParamsInterface {
+                context: Record<string & symbol, any>,
+            }
+
+            export interface ParserParamsAny extends Inner {
+                dataLink: SchemaInterfaces.GeneralSchemaObjectInterface | Array<SchemaInterfaces.GeneralSchemaObjectInterface | string> | string
+            }
+    
+            export interface ParserParamsObject extends Inner {
+                dataLink: SchemaInterfaces.GeneralSchemaObjectInterface
+            }
+    
+            export interface ParserParamsArray extends Inner {
+                dataLink: Array<SchemaInterfaces.GeneralSchemaObjectInterface | string>
+            }
+    
+            export interface ParserParamsString extends Inner {
+                dataLink: string
+            }
+
+            export interface ParserParamsComputations extends Inner {
+                dataLink: SchemaInterfaces.Computations
+            }
+        }
+
+        export interface ParserParamsAny extends GeneralParamsInterface {
+            dataLink: SchemaInterfaces.GeneralSchemaObjectInterface | Array<SchemaInterfaces.GeneralSchemaObjectInterface | string> | string | Record<string, any>
+        }
+
+        export interface ParserParamsObject extends GeneralParamsInterface {
+            dataLink: SchemaInterfaces.GeneralSchemaObjectInterface
+        }
+
+        export interface ParserParamsArray extends GeneralParamsInterface {
+            dataLink: Array<SchemaInterfaces.GeneralSchemaObjectInterface | string>
+        }
+
+        export interface ParserParamsString extends GeneralParamsInterface {
+            dataLink: string
+        }
+    }
     export namespace v5 {
         interface GeneralParamsInterface {
             data: DataContext,
@@ -227,6 +286,7 @@ export namespace DataParserInterfaces {
             defaultData: any,
             mode: number
         }
+
         export interface EntryParams extends GeneralParamsInterface {
             schema: SchemaInterfaces.GeneralSchemaObjectInterface | Array<SchemaInterfaces.GeneralSchemaObjectInterface | string> | string
         }

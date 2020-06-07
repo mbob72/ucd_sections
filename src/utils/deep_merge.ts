@@ -20,7 +20,7 @@ const getMergedDescriptors = (destProps: ExtendedPropertyDescriptorMap, sourcePr
                 value: getValue(sourceProps[sourceKey].value),
             };
         } else {
-            let newValue;
+            let newValue: unknown;
             if (
                 !isArrayOrObject(destProps[sourceKey].value) &&
                 !isArrayOrObject(sourceProps[sourceKey].value)
