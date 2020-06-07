@@ -113,10 +113,10 @@ const SectionField: React.ComponentClass<FieldV4.EntryPropsIn> = compose<FieldV4
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     _unmount_: unmount = [], // todo: not implemented.
                 } = {},
-            } = parsedSchema || {};
+            } = parsedSchema ?? {};
             if (_objectId_ && !Number.isInteger(_objectId_))
                 throw new Error('[error] SectionField: _objectId_ must be a number.');
-            let { _type_ = '' } = parsedSchema || {};
+            let { _type_ = '' } = parsedSchema ?? {};
             if (!Array.isArray(after))
                 throw new Error('[error] SectionField: _after_ must be an array.');
             const visible =

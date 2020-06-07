@@ -13,7 +13,8 @@
 		"jsx": "react",
 		"baseUrl": "./src",
 		"resolveJsonModule": true,
-		"removeComments": true
+		"removeComments": true,
+		"downlevelIteration": true
 	},
 	"include": [
 		"src/**/*"

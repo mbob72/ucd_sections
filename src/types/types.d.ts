@@ -6,13 +6,15 @@ export type Primitives = string | number | boolean | symbol | null;
 
 export namespace SchemaInterfaces {
     export type SchemaValue = Record<string, any> | Array<Record<string, any>> | string | Array<string>;
+    export interface GeneralSchemaObjectInterface extends Section, Field, Template {}
     export interface Template {
-        _dataLink_: string,
+        _dataLink_?: string,
         _template_: SchemaValue
     }
 
     export interface Section {
         _type_?: string,
+        _dataLink_?: string,
         _visible_?: string | boolean,
         _sections_?: Array<Section> | Template,
         _fields_?: Template
@@ -25,6 +27,7 @@ export namespace SchemaInterfaces {
 
     export interface Field {
         _type_?: string,
+        _dataLink?: string,
         _visible_?: string | boolean,
         _value_?: string,
         _computations_?: Computations
@@ -215,7 +218,35 @@ export namespace ComputationsInterfaces {
 
 export namespace DataParserInterfaces {
     export namespace v4 {}
-    export namespace v5 {}
+    export namespace v5 {
+        interface GeneralParamsInterface {
+            data: DataContext,
+            rootData: DataContext,
+            functions: SchemaCallbackCollection,
+            tokens: Record<string, string | number>,
+            defaultData: any,
+            mode: number
+        }
+        export interface EntryParams extends GeneralParamsInterface {
+            schema: SchemaInterfaces.GeneralSchemaObjectInterface | Array<SchemaInterfaces.GeneralSchemaObjectInterface | string> | string
+        }
+
+        export interface ParserParamsAny extends GeneralParamsInterface {
+            dataLink: SchemaInterfaces.GeneralSchemaObjectInterface | Array<SchemaInterfaces.GeneralSchemaObjectInterface | string> | string
+        }
+
+        export interface ParserParamsObject extends GeneralParamsInterface {
+            dataLink: SchemaInterfaces.GeneralSchemaObjectInterface
+        }
+
+        export interface ParserParamsArray extends GeneralParamsInterface {
+            dataLink: Array<SchemaInterfaces.GeneralSchemaObjectInterface | string>
+        }
+
+        export interface ParserParamsString extends GeneralParamsInterface {
+            dataLink: string
+        }
+    }
 }
 
 export namespace DataLinkParserInterfaces {

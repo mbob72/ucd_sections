@@ -69,8 +69,8 @@ const SectionEntry: React.ComponentClass<SectionV4.EntryPropsIn> = compose<Secti
     withProps(
         ({ history, context, computations, parsedSchema, sectionComponents, level = 0 }: RouteComponentProps & SectionV4.EntryPropsIn): SectionV4.EntryPropsAdditional & { visible: boolean } => {
             const tokenParams = { ...qs.parse(history.location.search) };
-            let { _type_ = '', _visible_ = true } = parsedSchema || {};
-            const { _sections_ = [], _fields_ = [] } = parsedSchema || {};
+            let { _type_ = '', _visible_ = true } = parsedSchema ?? {};
+            const { _sections_ = [], _fields_ = [] } = parsedSchema ?? {};
             if (!Array.isArray(_sections_) || !Array.isArray(_fields_))
                 throw new Error('Sections: _sections_/_fields_ must be an array.');
             if (isDataLink(_type_)) {

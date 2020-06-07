@@ -1,11 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Iterates iterator that can yield a simple value or a promise.
- * @param {Iterator} iterator
- * @param {Function} resolve
- * @param {Function} reject
  */
-const runAsyncGenerator = (iterator, resolve, reject) => {
-    const next = (v) => {
+const runAsyncGenerator = (iterator: Iterator<any, any, any>, resolve: (value: any) => void, reject: (value: any) => void): void => {
+    const next = (v?: any): void => {
         try {
             const { value, done } = iterator.next(v);
             if (done) {

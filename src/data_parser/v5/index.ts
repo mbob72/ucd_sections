@@ -1,8 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable key-spacing,indent */
 import dataLinkParser from '../../data_link_parser/v2';
 import getDataLink from './utils/data_link_cache';
 import { isObject } from '../../data_link_parser/utils';
 import runAsyncGenerator from '../utils/run_async_generator';
+import { DataParserInterfaces } from 'types/types';
+import DataParserV5 = DataParserInterfaces.v5;
 
 // todo: tokens, defaultData, _index_ and _objectId_ processing must be added.
 
@@ -13,7 +16,6 @@ import runAsyncGenerator from '../utils/run_async_generator';
  * In the full mode all types of fields must be parsed.
  * In the shallow mode only string values must be parsed (top level of the current object or array in the passed dataLink).
  * In the deep mode all values must be parsed.
- * @type {{USER_DEEP: number, CORE_DEEP: number, USER_SHALLOW: number, FULL_DEEP: number, CORE_SHALLOW: number, FULL_SHALLOW: number}}
  */
 const MODE = {
     USER_SHALLOW: 0b1001,
@@ -33,13 +35,7 @@ const MODE = {
  * @param {number} mode
  * @returns {Promise<*>}
  */
-function asyncDataParser({
-    schema,
-    data,
-    rootData,
-    functions,
-    mode = MODE.FULL_DEEP,
-}) {
+function asyncDataParser({ schema, data, rootData, defaultData, functions, tokens, mode = MODE.FULL_DEEP }: DataParserV5.EntryParams): Promise<any> {
     return new Promise((resolve, reject) => {
         if (!rootData) rootData = data;
         const iterator = switcher({
@@ -48,6 +44,8 @@ function asyncDataParser({
             rootData,
             functions,
             mode,
+            tokens,
+            defaultData
         });
         runAsyncGenerator(iterator, resolve, reject);
     });
@@ -55,20 +53,8 @@ function asyncDataParser({
 
 /**
  * Synchronous data parser. Returns only final result of the iteration.
- * @param {string|object|any[]} schema
- * @param {object|any[]} data
- * @param {object|any[]} rootData
- * @param {object} functions
- * @param {number} mode
- * @returns {*}
  */
-function syncDataParser({
-    schema,
-    data,
-    rootData,
-    functions,
-    mode = MODE.FULL_DEEP,
-}) {
+function syncDataParser({ schema, data, rootData, defaultData, functions, tokens, mode = MODE.FULL_DEEP }: DataParserV5.EntryParams): any {
     if (!rootData) rootData = data;
     const generator = switcher({
         dataLink: schema,
@@ -76,8 +62,11 @@ function syncDataParser({
         rootData,
         functions,
         mode,
+        tokens,
+        defaultData
     });
-    let result;
+    let result: any;
+    // eslint-disable-next-line no-constant-condition
     while (true) {
         const { done, value } = generator.next(result);
         result = value;
@@ -87,20 +76,8 @@ function syncDataParser({
 
 /**
  * Data parser as a generator, client may process each yielded value.
- * @param {string|object|any[]} schema
- * @param {object|any[]} data
- * @param {object|any[]} rootData
- * @param {object} functions
- * @param {number} mode
- * @returns {Generator<*, *, *>}
  */
-function* genDataParser({
-    schema,
-    data,
-    rootData,
-    functions,
-    mode = MODE.FULL_DEEP,
-}) {
+function* genDataParser({ schema, data, rootData, defaultData, functions, tokens, mode = MODE.FULL_DEEP }: DataParserV5.EntryParams): Generator<any, any, any> {
     if (!rootData) rootData = data;
     return yield* switcher({
         dataLink: schema,
@@ -108,24 +85,23 @@ function* genDataParser({
         rootData,
         functions,
         mode,
+        tokens,
+        defaultData
     });
 }
 
-function* switcher(params) {
+function* switcher(params: DataParserV5.ParserParamsAny): Generator<any, any, any> {
     const { dataLink, mode } = params;
     // shallow or deep mode
     const modeCode = mode & 0b1100 || 0b1100;
     if (typeof dataLink === 'string') {
-        return yield* dataLinkParser({
-            ...params,
-            dataLink: getDataLink(dataLink),
-        });
+        return yield* dataLinkParser({ ...params, dataLink: getDataLink(dataLink) });
     } else if (isObject(dataLink)) {
         if (modeCode === 0b1000) return dataLink;
-        return yield* objectParser(params);
+        return yield* objectParser(<DataParserV5.ParserParamsObject>params);
     } else if (Array.isArray(dataLink)) {
         if (modeCode === 0b1000) return dataLink;
-        return yield* arrayParser(params);
+        return yield* arrayParser(<DataParserV5.ParserParamsArray>params);
     } else if (typeof dataLink === 'undefined') {
         console.warn('[warning] dataParserV5: dataLink is undefined.');
         return void 0;
@@ -134,41 +110,32 @@ function* switcher(params) {
     }
 }
 
-function* arrayParser(params) {
+function* arrayParser(params: DataParserV5.ParserParamsArray): Generator<any, any, any> {
     const { dataLink } = params;
     const arr = new Array(dataLink.length);
     for (let i = 0; i < dataLink.length; i++) {
-        arr[i] = yield* switcher({ ...params, dataLink: dataLink[i] });
+        arr[i] = yield* switcher(<DataParserV5.ParserParamsAny>{ ...params, dataLink: dataLink[i] });
     }
     return arr;
 }
 
-function* objectParser(params) {
+function* objectParser(params: DataParserV5.ParserParamsObject): Generator<any, any, any> {
     const { dataLink, mode } = params;
     // user, core or full mode
     const modeCode = mode & 3 || 3;
     let { data } = params;
     // _computations_ must be skipped on this step.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { _dataLink_, _computations_, _template_, ...others } = dataLink;
     if (_dataLink_) {
-        data = yield* switcher({
-            ...params,
-            dataLink: _dataLink_,
-            mode: MODE.USER_DEEP,
-        });
+        data = yield* switcher({ ...params, dataLink: _dataLink_, mode: MODE.USER_DEEP });
     }
     if (_template_) {
         if (!Array.isArray(data))
             throw new Error('[error] dataParserV5: data must be an array.');
-        const a = [];
+        const a: Array<any> = [];
         for (const subData of data) {
-            a.push(
-                yield* switcher({
-                    ...params,
-                    dataLink: _template_,
-                    data: subData,
-                })
-            );
+            a.push(yield* switcher(<DataParserV5.ParserParamsAny>{ ...params, dataLink: _template_, data: subData, }));
         }
         return a;
     }
@@ -189,11 +156,7 @@ function* objectParser(params) {
             throw new Error(
                 '[error] dataParserV5: parsedKey must be a string.'
             );
-        result[parsedKey] = yield* switcher({
-            ...params,
-            dataLink: dataLink[key],
-            data,
-        });
+        result[parsedKey] = yield* switcher({ ...params, dataLink: dataLink[key], data });
     }
     return result;
 }
