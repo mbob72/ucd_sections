@@ -12,8 +12,10 @@ import { isEmpty } from '../../../utils';
 import { isDataLink } from '../../../data_link_parser/utils';
 import dataLinkParser from '../../../data_link_parser/v1';
 import getDataLink from '../../../data_parser/utils/data_link_cache';
-import { withRouter } from 'react-router';
+import { withRouter, RouteComponentProps } from 'react-router';
 import { simpleDataParser } from '../../../data_parser/v4/simple_data_parser';
+import { SectionInterfaces, SchemaInterfaces, DataContext } from 'types/types';
+import FieldV4 = SectionInterfaces.v4.Field;
 
 const EVENTS = {
     _onBlur_: 'onBlur',
@@ -22,14 +24,17 @@ const EVENTS = {
 };
 
 const getSetStateParams = (
-    valueLink,
-    value,
-    schema,
-    actions,
-    after,
-    context,
-    match,
-    location
+    valueLink: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    value: any,
+    schema: FieldV4.ParsedSchema | null,
+    actions: Record<string, string & SchemaInterfaces.FieldValue>,
+    after: Array<string>,
+    context: DataContext,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    match: any, // todo: should be clarified...
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    location: any // todo: should be clarified...
 ) => {
     const dataLink = valueLink && '@' + valueLink.replace(/@?\\/g, '');
     return {
@@ -43,9 +48,34 @@ const getSetStateParams = (
     };
 };
 
-const SectionField = compose(
+const WrappedClientFieldComponent = ({
+    parsedSchema,
+    level,
+    context,
+    handlers,
+    errors,
+    Comp,
+    computations,
+    loading,
+    styles,
+}: FieldV4.EntryPropsIn & FieldV4.EntryPropsAdditional) => {
+    return (
+        <Comp
+            styles={styles}
+            loading={loading}
+            context={context}
+            handlers={handlers}
+            errors={errors}
+            parsedSchema={parsedSchema}
+            level={level || 0}
+            computations={computations}
+        />
+    );
+};
+
+const SectionField: React.ComponentClass<FieldV4.EntryPropsIn> = compose<FieldV4.EntryPropsIn & FieldV4.EntryPropsAdditional, FieldV4.EntryPropsIn>(
     branch(
-        ({ context, parsedSchema }) => isEmpty(context) || isEmpty(parsedSchema),
+        ({ context, parsedSchema }: FieldV4.EntryPropsIn) => isEmpty(context) || isEmpty(parsedSchema),
         renderNothing
     ),
     withRouter,
@@ -60,33 +90,33 @@ const SectionField = compose(
     withPropsOnChange(
         [ 'context', 'parsedSchema' ],
         ({
-            setLoadingState,
-            context,
+            context = {},
             parsedSchema,
-            setState,
+            updateState,
             match,
             location,
             fieldComponents,
             computations,
-        }) => {
+            loading
+        }: FieldV4.EntryPropsIn & RouteComponentProps & { loading: boolean, setLoadingState: (state: boolean) => void }): FieldV4.EntryPropsAdditional & { visible: boolean } => {
             const {
-                _objectId_,
+                _objectId_ = 0,
                 _value_ = '',
                 _visible_ = true,
                 _computations_: {
-                    // eslint-disable-next-line no-unused-vars
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     _initial_: initial = [], // todo: not implemented.
-                    // eslint-disable-next-line no-unused-vars
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     _before_: before = [], // todo: not implemented.
                     _handlers_ = {},
                     _after_: after = [],
-                    // eslint-disable-next-line no-unused-vars
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     _unmount_: unmount = [], // todo: not implemented.
                 } = {},
-            } = parsedSchema;
-            if (!Number.isInteger(_objectId_))
+            } = parsedSchema || {};
+            if (_objectId_ && !Number.isInteger(_objectId_))
                 throw new Error('[error] SectionField: _objectId_ must be a number.');
-            let { _type_ = '' } = parsedSchema;
+            let { _type_ = '' } = parsedSchema || {};
             if (!Array.isArray(after))
                 throw new Error('[error] SectionField: _after_ must be an array.');
             const visible =
@@ -116,13 +146,13 @@ const SectionField = compose(
             if (!Comp)
                 throw new Error('[error] SectionField: DefaultField must be defined.');
 
-            const handlers = {};
+            const handlers: FieldV4.Handlers = {};
             for (const eventType of Object.getOwnPropertyNames(_handlers_)) {
                 if (!(eventType in EVENTS)) continue;
                 let actions = _handlers_[eventType];
                 actions = Array.isArray(actions) ? actions : [ actions ];
                 handlers[EVENTS[eventType]] = (e) =>
-                    setState(
+                    updateState(
                         getSetStateParams(
                             _value_,
                             e.target.value,
@@ -136,45 +166,21 @@ const SectionField = compose(
                     );
             }
 
-            const { errors } = context[Symbol.for(_objectId_)] || {};
+            const { errors } = context ? context[Symbol.for(String(_objectId_))] || {} : undefined;
             return {
                 visible,
                 handlers,
                 errors,
+                loading,
                 // value,
                 Comp,
             };
         }
     ),
-    branch(({ visible }) => !visible, renderNothing)
-)(
-    ({
-        parsedSchema,
-        level,
-        context,
-        handlers,
-        errors,
-        Comp,
-        computations,
-        loading,
-        styles,
-    }) => {
-        return (
-            <Comp
-                styles={styles}
-                loading={loading}
-                context={context}
-                handlers={handlers}
-                errors={errors}
-                parsedSchema={parsedSchema}
-                level={level}
-                computations={computations}
-            />
-        );
-    }
-);
+    branch(({ visible }: { visible: boolean }) => !visible, renderNothing)
+)(WrappedClientFieldComponent);
 
-const FieldComponent = ({ parsedSchema }) => {
+const FieldComponent = ({ parsedSchema }: FieldV4.NodeProps): JSX.Element => {
     return (
         <SectionsContext.Consumer>
             {({
@@ -182,15 +188,15 @@ const FieldComponent = ({ parsedSchema }) => {
                 sectionComponents,
                 fieldComponents,
                 context,
-                setState,
+                updateState,
                 styles,
-            }) => {
+            }: SectionInterfaces.v4.Section.ReactContextValue): JSX.Element => {
                 return (
                     <SectionField
                         styles={styles}
                         context={context}
                         parsedSchema={parsedSchema}
-                        setState={setState}
+                        updateState={updateState}
                         computations={computations}
                         sectionComponents={sectionComponents}
                         fieldComponents={fieldComponents}
