@@ -19,7 +19,10 @@ const SectionsContext = React.createContext<SectionV4.ReactContextValue>({
     fieldComponents: {},
     sectionComponents: {},
     styles: {},
-    computations: {}
+    computations: {},
+    history: {},
+    location: {},
+    match: {}
 });
 
 class TopSection extends React.Component<SectionV4.TopProps, SectionV4.TopState> {
@@ -65,6 +68,9 @@ class TopSection extends React.Component<SectionV4.TopProps, SectionV4.TopState>
             data,
             schema,
             styles,
+            history,
+            location,
+            match
         } = this.props;
         const fullComputations = {
             ...computations,
@@ -87,6 +93,9 @@ class TopSection extends React.Component<SectionV4.TopProps, SectionV4.TopState>
             updateState,
             context,
             styles,
+            history,
+            location,
+            match
         };
         return (
             <SectionsContext.Provider value={sectionsContextValue}>
@@ -95,5 +104,5 @@ class TopSection extends React.Component<SectionV4.TopProps, SectionV4.TopState>
         );
     }
 }
-export { SectionsContext };
-export default TopSection;
+export { SectionsContext, TopSection };
+// export default TopSection;

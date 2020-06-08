@@ -1,3 +1,5 @@
+import { RouteComponentProps } from 'react-router';
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type ExtendedPropertyDescriptorMap = PropertyDescriptorMap | Record<symbol, PropertyDescriptor>
 export type DataContext = Record<string & symbol, any> | null;
@@ -67,7 +69,10 @@ export namespace SectionInterfaces {
                 sectionComponents: SectionComponentsCollection,
                 fieldComponents: FieldComponentsCollection,
                 context: DataContext | null,
-                styles: Record<string, string>
+                styles: Record<string, string>,
+                history: any,
+                location: any,
+                match: any
             }
 
             export interface TopState {
@@ -77,7 +82,7 @@ export namespace SectionInterfaces {
                 parsedSchema: ParsedSchema | null
             }
 
-            export interface TopProps {
+            export interface TopProps extends RouteComponentProps {
                 data: Record<string, any>,
                 schema: Record<string, any>,
                 styles: Styles,
@@ -99,7 +104,10 @@ export namespace SectionInterfaces {
                 context: DataContext | null,
                 parsedSchema: ParsedSchema | null,
                 level?: number,
-                updateState: updateStateCallback
+                updateState: updateStateCallback,
+                history: any,
+                location: any,
+                match: any
             }
 
             export interface EntryPropsAdditional {
@@ -147,7 +155,10 @@ export namespace SectionInterfaces {
                 computations: SchemaCallbackCollection,
                 fieldComponents: FieldComponentsCollection,
                 sectionComponents: SectionComponentsCollection,
-                level?: number
+                level?: number,
+                history: any,
+                location: any,
+                match: any
             }
 
             export interface EntryPropsAdditional {

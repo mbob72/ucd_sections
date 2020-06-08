@@ -2,7 +2,9 @@
   "name": "ucd_sections",
   "version": "0.1.0",
   "description": "This module provides an opportunity to build interfaces and forms based on schemas.",
-  "main": "index.js",
+  "main": "./lib/index.js",
+  "typings": "./types/types.d.ts",
+  "types": "./types/types.d.ts",
   "scripts": {
     "build": "webpack --mode production --env.production --progress",
     "lint": "eslint './src/**/*.{ts,tsx,js,jsx}'",
@@ -12,25 +14,18 @@
     "type": "git",
     "url": "https://luxproject.luxoft.com/stash/scm/gpbesfl/ucd_sections.git"
   },
-  "prettier": {
-    "trailingComma": "none",
-    "tabWidth": 4,
-    "semi": true,
-    "singleQuote": true
-  },
   "keywords": [],
   "author": "Vsevolod Chuprygin <VChuprygin@luxoft.com>",
   "license": "UNLICENSED",
   "dependencies": {
     "classnames": "2.2.6",
     "query-string": "^6.12.1",
-    "react": "^16.8.3",
-    "react-dom": "^16.8.3",
-    "react-router": "^5.2.0",
     "recompose": "^0.30.0",
     "uuid": "^3.3.3"
   },
   "devDependencies": {
+    "react": "^16.8.3",
+    "react-router": "^5.2.0",
     "@types/autoprefixer": "^9.7.2",
     "@types/classnames": "^2.2.10",
     "@types/node": "^14.0.9",
@@ -62,6 +57,7 @@
     "resolve-url-loader": "^3.1.1",
     "sass": "^1.26.5",
     "sass-loader": "^7.1.0",
+    "source-map-loader": "^1.0.0",
     "style-loader": "^0.23.1",
     "ts-loader": "^7.0.5",
     "ts-node": "^8.10.2",

@@ -9,7 +9,7 @@ import { isDataLink } from '../../../data_link_parser/utils';
 import dataLinkParser from '../../../data_link_parser/v1';
 import getDataLink from '../../../data_parser/utils/data_link_cache';
 import SectionField from './section_field';
-import { withRouter, RouteComponentProps } from 'react-router';
+import { RouteComponentProps } from 'react-router';
 
 import { SectionInterfaces } from '../../../types/types';
 import SectionV4 = SectionInterfaces.v4.Section;
@@ -61,7 +61,6 @@ const WrappedClientSectionComponent = ({
  * Sections entry point
  */
 const SectionEntry: React.ComponentClass<SectionV4.EntryPropsIn> = compose<SectionV4.EntryPropsIn & SectionV4.EntryPropsAdditional, SectionV4.EntryPropsIn>(
-    withRouter,
     branch(
         ({ context, parsedSchema }: SectionV4.EntryPropsIn): boolean => !(context && strictlyIsObject(context) && parsedSchema && strictlyIsObject(parsedSchema)),
         renderNothing
@@ -141,6 +140,9 @@ const Section = ({ parsedSchema, level }: SectionV4.NodeProps): JSX.Element => {
                 context,
                 updateState,
                 styles,
+                history,
+                location, 
+                match
             }: SectionV4.ReactContextValue): JSX.Element => {
                 return (
                     <SectionEntry
@@ -152,6 +154,9 @@ const Section = ({ parsedSchema, level }: SectionV4.NodeProps): JSX.Element => {
                         computations={computations}
                         sectionComponents={sectionComponents}
                         fieldComponents={fieldComponents}
+                        history={history}
+                        location={location}
+                        match={match}
                     />
                 );
             }}

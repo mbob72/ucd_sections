@@ -11,12 +11,17 @@ const Config = (): Configuration => ({
         libraryTarget: 'umd'
     },
     mode: 'production',
+    devtool: '#inline-source-map',
     resolve: {
-        extensions: [ '.scss', '.sass', '.css', '.ts', '.tsx', '.js', '.jsx' ]
+        extensions: [ '.scss', '.sass', '.css', '.ts', '.tsx', '.js', '.jsx', '.d.ts' ]
     },
     plugins: [
         new ForkTsCheckerWebpackPlugin({eslint: true})
     ],
+    externals: {
+        'react': 'react',
+        'react-router': 'react-router'
+    },
     module: {
         rules: [
             {
@@ -24,8 +29,14 @@ const Config = (): Configuration => ({
                 exclude: [ /node_modules/ ],
                 loader: 'ts-loader',
                 options: {
+                    configFile: path.join(__dirname, './tsconfig.json'),
                     transpileOnly: true
                 }
+            },
+            {
+                enforce: 'pre',
+                test: /\.js$/,
+                loader: 'source-map-loader'
             },
             {
                 test: /\.s[ac]ss$/,

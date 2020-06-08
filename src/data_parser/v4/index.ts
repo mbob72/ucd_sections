@@ -9,11 +9,12 @@ import {
 import getDataLink from '../utils/data_link_cache';
 import * as renderFunctions from '../../computations/index';
 import { linkParser } from '../../data_link_parser/v1/helpers';
-import incrementGenerator from '../utils/increment_generator';
+import IncrementGenerator from '../utils/increment_generator';
 import deepMerge from '../../utils/deep_merge';
 import { DataParserInterfaces, SchemaInterfaces } from 'types/types';
 import DataParserV4 = DataParserInterfaces.v4.Preprocessor;
 import { ProcessedObject } from 'utils/types';
+import { simpleDataParser, parseSchemaFields } from './simple_data_parser';
 
 // todo: this file must be removed. All schemas should be parsed inside the sections logic. Schema pre-processing is very difficult for maintenance.
 
@@ -28,7 +29,7 @@ const SECTIONS_MODE = 'sectionsMode';
  */
 
 const DATA_OBJECT_ID = Symbol.for('_objectId_');
-const objectIdGenerator = incrementGenerator();
+const objectIdGenerator = new IncrementGenerator();
 const templateIndexNames: Array<string> = [];
 
 /**
@@ -619,4 +620,5 @@ export const templateDeleteInfo = (dataLink: string, context: Record<string | sy
     return Object.keys(context).filter((item) => item.startsWith(dataLink));
 };
 
+export { dataParser, simpleDataParser, parseSchemaFields };
 export default dataParser;
