@@ -1,6 +1,5 @@
 import path from "path";
 import { Configuration } from "webpack";
-import autoprefixer from "autoprefixer";
 import ForkTsCheckerWebpackPlugin from "fork-ts-checker-webpack-plugin";
 
 const Config = (): Configuration => ({
@@ -37,36 +36,6 @@ const Config = (): Configuration => ({
                 enforce: 'pre',
                 test: /\.js$/,
                 loader: 'source-map-loader'
-            },
-            {
-                test: /\.s[ac]ss$/,
-                use: [
-                    {
-                        loader: 'style-loader'
-                    },
-                    {
-                        loader: 'css-loader',
-                        options: {
-                            sourceMap: true,
-                            localIdentName: '[name]__[local]__[hash:base64:5]'
-                        }
-                    },
-                    {
-                        loader: 'postcss-loader',
-                        options: {
-                            plugins: [
-                                autoprefixer()
-                            ],
-                            sourceMap: true
-                        }
-                    },
-                    {
-                        loader: 'sass-loader',
-                        options: {
-                            sourceMap: true
-                        }
-                    }
-                ]
             }
         ]
     }

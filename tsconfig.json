@@ -11,11 +11,18 @@
 		"isolatedModules": true,
 		"esModuleInterop": true,
 		"jsx": "react",
+		"rootDir": "./src",
 		"baseUrl": "./src",
+		"outDir": "./lib-tsc",
 		"resolveJsonModule": true,
 		"removeComments": true,
 		"downlevelIteration": true,
-		"declaration": true
+		"declaration": true,
+		"declarationDir": "./lib",
+		"declarationMap": true,
+		"typeRoots": [
+			"./src/types"
+		]
 	},
 	"include": [
 		"src/**/*"
