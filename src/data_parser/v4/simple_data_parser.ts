@@ -17,9 +17,6 @@ import DataParserV4 = DataParserInterfaces.v4;
 /**
  * This parser parses only fields with a syntax string.
  * It is a standalone parser.
- * @param schema
- * @param data
- * @param renderFunctions
  */
 const parseSchemaFields = (schema: SchemaInterfaces.GeneralSchemaObjectInterface, data: Record<string, any>, renderFunctions: SchemaCallbackCollection): Record<string, any> => {
     const schm = { ...schema };
@@ -39,8 +36,6 @@ const parseSchemaFields = (schema: SchemaInterfaces.GeneralSchemaObjectInterface
  * it parses the passed dataLink object recursively.
  * This parser can't parse the template structure
  * it expects a simple structure with arrays and objects with dataLink strings inside.
- * @param {{renderFunctions: *, data: *, dataLink: *}} params
- * @returns {*}
  */
 const simpleDataParser = (params: DataParserV4.ParserParamsAny): any => {
     const { data } = params;
@@ -51,8 +46,6 @@ const simpleDataParser = (params: DataParserV4.ParserParamsAny): any => {
 
 /**
  * Calls a function corresponding the passed dataLink type.
- * @param {Params} params
- * @returns {any[]|null|Array|*}
  */
 const switcher = (params: DataParserV4.ParserParamsAny): any => {
     const { dataLink, data } = params;
@@ -67,8 +60,6 @@ const switcher = (params: DataParserV4.ParserParamsAny): any => {
 
 /**
  * Parses arrays.
- * @param {Params} params
- * @return {any[]}
  */
 const arrayParser = (params: DataParserV4.ParserParamsArray): Array<any> => {
     /** @type {Array<Object>} dataLink */
@@ -81,8 +72,6 @@ const arrayParser = (params: DataParserV4.ParserParamsArray): Array<any> => {
 };
 /**
  * Parses objects.
- * @param {Params} params
- * @return Object
  */
 const objectParser = (params: DataParserV4.ParserParamsObject): Record<string, any> => {
     const { dataLink } = params;

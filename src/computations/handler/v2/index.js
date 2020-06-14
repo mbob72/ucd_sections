@@ -1,5 +1,5 @@
 import ValidationError from '../errors/validation_error';
-import { isEmpty, isError } from '../../../utils';
+import { isEmpty, isError, hasOwnProperty } from '../../../utils';
 import BreakPromiseChainError from '../errors/break_promise_chain_error';
 import { deepCopy } from '../../../utils/deep_copy';
 import { isObject } from '../../../data_link_parser/utils';
@@ -33,7 +33,7 @@ export const getHandler = ({ schema, computations, updateState }) => {
         if (Number.isNaN(_objectId_)) throw new Error('SectionsComputation: _objectId_ must be a number.');
         if (typeof _formId_ === 'undefined' || !_formId_) throw new Error('SectionsComputations: formId must be defined.');
 
-        if (!formPromises.hasOwnProperty(_formId_)) {
+        if (!hasOwnProperty(formPromises, _formId_)) {
             formPromises[_formId_] = {
                 mainReject: null,
                 newContext: deepCopy(context),
@@ -97,7 +97,9 @@ export const getHandler = ({ schema, computations, updateState }) => {
                 },
                 (err) => {
                     if (err instanceof BreakPromiseChainError) throw err;
-                    else console.error('[error] computations: ', err);
+                    else {
+                        console.error('[error] computations: ', err, err instanceof BreakPromiseChainError);
+                    }
                 }
             )
             .then(
@@ -155,11 +157,13 @@ function run (controlStatus, actionsList, value, currentSchemaObject, context, s
                     reject(err);
                     breakMark = true;
                 }
+                // eslint-disable-next-line @typescript-eslint/no-unused-expressions
                 controlStatus && delete breakControls[_objectId_];
             } catch (e) {
                 reject(e);
             }
         };
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         controlStatus && (breakControls[_objectId_] = stop);
 
         const next = (v) => {
@@ -224,7 +228,7 @@ const compute = (act, value, currentSchemaObject, context, schema, computations,
                 return;
             }
             val = { ...value, ...val };
-            if (!val.hasOwnProperty('value') || !val.hasOwnProperty('dataLink')) {
+            if (!hasOwnProperty(val, 'value') || !hasOwnProperty(val, 'dataLink')) {
                 reject(new Error('Returned object must contain "value" and "dataLink" properties.'));
             } else resolve(val);
         };

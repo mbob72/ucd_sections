@@ -11,7 +11,7 @@ const Config = (): Configuration => ({
         libraryTarget: 'umd'
     },
     mode: 'production',
-    devtool: '#inline-source-map',
+    devtool: 'inline-source-map',
     resolve: {
         extensions: [ '.scss', '.sass', '.css', '.ts', '.tsx', '.js', '.jsx', '.d.ts' ]
     },

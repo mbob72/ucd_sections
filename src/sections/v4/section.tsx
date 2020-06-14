@@ -1,32 +1,14 @@
 import React from 'react';
 import { branch, compose, renderNothing, withProps } from 'recompose';
-import qs from 'query-string';
 
-import { SectionsContext } from '../index';
-
-import { strictlyIsObject } from '../../../utils';
-import { isDataLink } from '../../../data_link_parser/utils';
-import dataLinkParser from '../../../data_link_parser/v1';
-import getDataLink from '../../../data_parser/utils/data_link_cache';
-import SectionField from './section_field';
+import { strictlyIsObject } from '../../utils';
+import { isDataLink } from '../../data_link_parser/utils';
+import dataLinkParser from '../../data_link_parser/v1';
+import getDataLink from '../../data_parser/utils/data_link_cache';
 import { RouteComponentProps } from 'react-router';
 
-import { SectionInterfaces } from '../../../types/types';
+import { SectionInterfaces } from '../../types/types';
 import SectionV4 = SectionInterfaces.v4.Section;
-import FieldV4 = SectionInterfaces.v4.Field;
-
-const ScopedSection = ({ parsedSchema, level = 0 }: SectionV4.NodeProps): JSX.Element => 
-    <Section
-        parsedSchema={parsedSchema}
-        level={level}
-    />;
-
-
-const ScopedField = ({ parsedSchema, level = 0 }: FieldV4.NodeProps): JSX.Element => 
-    <SectionField
-        parsedSchema={parsedSchema}
-        level={level}
-    />;
 
 const WrappedClientSectionComponent = ({
     parsedSchema,
@@ -38,7 +20,9 @@ const WrappedClientSectionComponent = ({
     fields,
     updateState,
     computations,
-    styles
+    styles,
+    sectionNode,
+    fieldNode
 }: SectionV4.EntryPropsIn & SectionV4.EntryPropsAdditional): JSX.Element => {
     return (
         <Comp
@@ -51,8 +35,8 @@ const WrappedClientSectionComponent = ({
             level={level || 0}
             updateState={updateState}
             computations={computations}
-            ScopedSection={ScopedSection}
-            ScopedField={ScopedField}
+            SectionNode={sectionNode()}
+            FieldNode={fieldNode()}
         />
     );
 };
@@ -60,14 +44,13 @@ const WrappedClientSectionComponent = ({
 /**
  * Sections entry point
  */
-const SectionEntry: React.ComponentClass<SectionV4.EntryPropsIn> = compose<SectionV4.EntryPropsIn & SectionV4.EntryPropsAdditional, SectionV4.EntryPropsIn>(
+export const SectionEntry: React.ComponentClass<SectionV4.EntryPropsIn> = compose<SectionV4.EntryPropsIn & SectionV4.EntryPropsAdditional, SectionV4.EntryPropsIn>(
     branch(
         ({ context, parsedSchema }: SectionV4.EntryPropsIn): boolean => !(context && strictlyIsObject(context) && parsedSchema && strictlyIsObject(parsedSchema)),
         renderNothing
     ),
     withProps(
-        ({ history, context, computations, parsedSchema, sectionComponents, level = 0 }: RouteComponentProps & SectionV4.EntryPropsIn): SectionV4.EntryPropsAdditional & { visible: boolean } => {
-            const tokenParams = { ...qs.parse(history.location.search) };
+        ({ context, computations, parsedSchema, sectionComponents, level = 0, fieldNode, sectionNode, tokenParams }: RouteComponentProps & SectionV4.EntryPropsIn): SectionV4.EntryPropsAdditional & { visible: boolean } => {
             let { _type_ = '', _visible_ = true } = parsedSchema ?? {};
             const { _sections_ = [], _fields_ = [] } = parsedSchema ?? {};
             if (!Array.isArray(_sections_) || !Array.isArray(_fields_))
@@ -77,6 +60,7 @@ const SectionEntry: React.ComponentClass<SectionV4.EntryPropsIn> = compose<Secti
                     dataLink: getDataLink(_type_),
                     data: context,
                     renderFunctions: computations,
+                    tokens: tokenParams
                 });
                 if (typeof _type_ !== 'string') {
                     console.error('[error] SectionEntry: _type_ must be a string.');
@@ -88,6 +72,7 @@ const SectionEntry: React.ComponentClass<SectionV4.EntryPropsIn> = compose<Secti
                     dataLink: getDataLink(_visible_),
                     data: context,
                     renderFunctions: computations,
+                    tokens: tokenParams
                 });
             }
             const Comp = _type_ && _type_ in sectionComponents && sectionComponents[_type_]
@@ -98,8 +83,9 @@ const SectionEntry: React.ComponentClass<SectionV4.EntryPropsIn> = compose<Secti
 
             let sections: JSX.Element[] = [];
             if (_sections_.length) {
+                const Section = sectionNode();
                 sections = _sections_.map((schema, i) => 
-                    <ScopedSection
+                    <Section
                         parsedSchema={schema}
                         level={level + 1}
                         key={i}
@@ -109,8 +95,9 @@ const SectionEntry: React.ComponentClass<SectionV4.EntryPropsIn> = compose<Secti
 
             let fields: JSX.Element[] = [];
             if (_fields_.length) {
+                const Field = fieldNode();
                 fields = _fields_.map((schema, i) => 
-                    <ScopedField
+                    <Field
                         parsedSchema={schema}
                         level={level}
                         key={i}
@@ -119,7 +106,6 @@ const SectionEntry: React.ComponentClass<SectionV4.EntryPropsIn> = compose<Secti
             }
 
             return {
-                tokenParams,
                 visible: !!_visible_,
                 Comp,
                 sections,
@@ -129,39 +115,3 @@ const SectionEntry: React.ComponentClass<SectionV4.EntryPropsIn> = compose<Secti
     ),
     branch(({ visible }: { visible: boolean}) => !visible, renderNothing)
 )(WrappedClientSectionComponent);
-
-const Section = ({ parsedSchema, level }: SectionV4.NodeProps): JSX.Element => {
-    return (
-        <SectionsContext.Consumer>
-            {({
-                computations,
-                sectionComponents,
-                fieldComponents,
-                context,
-                updateState,
-                styles,
-                history,
-                location, 
-                match
-            }: SectionV4.ReactContextValue): JSX.Element => {
-                return (
-                    <SectionEntry
-                        styles={styles}
-                        level={level}
-                        context={context}
-                        parsedSchema={parsedSchema}
-                        updateState={updateState}
-                        computations={computations}
-                        sectionComponents={sectionComponents}
-                        fieldComponents={fieldComponents}
-                        history={history}
-                        location={location}
-                        match={match}
-                    />
-                );
-            }}
-        </SectionsContext.Consumer>
-    );
-};
-
-export default Section;

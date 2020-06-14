@@ -3,6 +3,7 @@ class BreakPromiseChainError extends Error {
         const message = 'Promise chain is broken!';
         super(message);
         this.message = message;
+        Object.setPrototypeOf(this, BreakPromiseChainError.prototype);
     }
 }
 

@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "description": "This module provides an opportunity to build interfaces and forms based on schemas.",
   "main": "./lib/index.js",
-  "typings": "./types/types.d.ts",
   "types": "./types/types.d.ts",
   "scripts": {
     "build": "webpack --mode production --env.production --progress",

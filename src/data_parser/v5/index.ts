@@ -131,6 +131,7 @@ function* objectParser(params: DataParserV5.ParserParamsObject): Generator<any, 
         }
         return a;
     }
+    // todo: add a functionParser: { _function_: "", _params_: [...] } to simplify complex expressions in schemas.
     const result = {};
     for (const key of Object.getOwnPropertyNames(others)) {
         if (modeCode !== 3) {

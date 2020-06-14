@@ -7,13 +7,12 @@ import {
     withStateHandlers,
 } from 'recompose';
 
-import { SectionsContext } from '../index';
-import { isEmpty } from '../../../utils';
-import { isDataLink } from '../../../data_link_parser/utils';
-import dataLinkParser from '../../../data_link_parser/v1';
-import getDataLink from '../../../data_parser/utils/data_link_cache';
+import { isEmpty } from '../../utils';
+import { isDataLink } from '../../data_link_parser/utils';
+import dataLinkParser from '../../data_link_parser/v1';
+import getDataLink from '../../data_parser/utils/data_link_cache';
 import { RouteComponentProps } from 'react-router';
-import { simpleDataParser } from '../../../data_parser/v4/simple_data_parser';
+import { simpleDataParser } from '../../data_parser/v4/simple_data_parser';
 import { SectionInterfaces, SchemaInterfaces, DataContext } from 'types/types';
 import FieldV4 = SectionInterfaces.v4.Field;
 
@@ -34,7 +33,9 @@ const getSetStateParams = (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     match: any, // todo: should be clarified...
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    location: any // todo: should be clarified...
+    location: any, // todo: should be clarified...
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tokenParams: any
 ) => {
     const dataLink = valueLink && '@' + valueLink.replace(/@?\\/g, '');
     return {
@@ -45,6 +46,7 @@ const getSetStateParams = (
         context,
         match,
         location,
+        tokenParams
     };
 };
 
@@ -58,6 +60,7 @@ const WrappedClientFieldComponent = ({
     computations,
     loading,
     styles,
+    tokenParams
 }: FieldV4.EntryPropsIn & FieldV4.EntryPropsAdditional) => {
     return (
         <Comp
@@ -69,11 +72,12 @@ const WrappedClientFieldComponent = ({
             parsedSchema={parsedSchema}
             level={level || 0}
             computations={computations}
+            tokenParams={tokenParams}
         />
     );
 };
 
-const SectionField: React.ComponentClass<FieldV4.EntryPropsIn> = compose<FieldV4.EntryPropsIn & FieldV4.EntryPropsAdditional, FieldV4.EntryPropsIn>(
+export const FieldEntry: React.ComponentClass<FieldV4.EntryPropsIn> = compose<FieldV4.EntryPropsIn & FieldV4.EntryPropsAdditional, FieldV4.EntryPropsIn>(
     branch(
         ({ context, parsedSchema }: FieldV4.EntryPropsIn) => isEmpty(context) || isEmpty(parsedSchema),
         renderNothing
@@ -96,7 +100,8 @@ const SectionField: React.ComponentClass<FieldV4.EntryPropsIn> = compose<FieldV4
             location,
             fieldComponents,
             computations,
-            loading
+            loading,
+            tokenParams
         }: FieldV4.EntryPropsIn & RouteComponentProps & { loading: boolean, setLoadingState: (state: boolean) => void }): FieldV4.EntryPropsAdditional & { visible: boolean } => {
             const {
                 _objectId_ = 0,
@@ -124,6 +129,7 @@ const SectionField: React.ComponentClass<FieldV4.EntryPropsIn> = compose<FieldV4
                 dataLink: _visible_,
                 data: context,
                 renderFunctions: computations,
+                tokens: tokenParams
             })
             : !!_visible_;
             if (isDataLink(_type_)) {
@@ -131,6 +137,7 @@ const SectionField: React.ComponentClass<FieldV4.EntryPropsIn> = compose<FieldV4
                     dataLink: getDataLink(_type_),
                     data: context,
                     renderFunctions: computations,
+                    tokens: tokenParams
                 });
                 if (typeof _type_ !== 'string') {
                     console.error('[error] SectionField: _type_ must be a string.');
@@ -160,7 +167,8 @@ const SectionField: React.ComponentClass<FieldV4.EntryPropsIn> = compose<FieldV4
                             after,
                             context,
                             match,
-                            location
+                            location,
+                            tokenParams
                         )
                     );
             }
@@ -178,38 +186,3 @@ const SectionField: React.ComponentClass<FieldV4.EntryPropsIn> = compose<FieldV4
     ),
     branch(({ visible }: { visible: boolean }) => !visible, renderNothing)
 )(WrappedClientFieldComponent);
-
-const FieldComponent = ({ parsedSchema }: FieldV4.NodeProps): JSX.Element => {
-    return (
-        <SectionsContext.Consumer>
-            {({
-                computations,
-                sectionComponents,
-                fieldComponents,
-                context,
-                updateState,
-                styles,
-                history,
-                location,
-                match
-            }: SectionInterfaces.v4.Section.ReactContextValue): JSX.Element => {
-                return (
-                    <SectionField
-                        styles={styles}
-                        context={context}
-                        parsedSchema={parsedSchema}
-                        updateState={updateState}
-                        computations={computations}
-                        sectionComponents={sectionComponents}
-                        fieldComponents={fieldComponents}
-                        history={history}
-                        location={location}
-                        match={match}
-                    />
-                );
-            }}
-        </SectionsContext.Consumer>
-    );
-};
-
-export default FieldComponent;

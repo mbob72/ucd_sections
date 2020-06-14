@@ -5,6 +5,7 @@ export type ExtendedPropertyDescriptorMap = PropertyDescriptorMap | Record<symbo
 export type DataContext = Record<string & symbol, any> | null;
 export type SchemaCallbackCollection = Record<string, ComputationsInterfaces.SchemaCallbackSimple | ComputationsInterfaces.SchemaCallbackForComputations>;
 export type Primitives = string | number | boolean | symbol | null;
+type TokenParams = qs.ParsedQs;
 
 export namespace SchemaInterfaces {
     export type SchemaValue = Record<string, any> | Array<Record<string, any>> | string | Array<string>;
@@ -54,7 +55,6 @@ export namespace SchemaInterfaces {
 
 export namespace SectionInterfaces {
     export namespace v4 {
-        type TokenParams = Record<string, string | Array<string> | null | undefined>;
         type updateStateCallback = (data: DataContext) => void;
         export type Styles = Record<string, string>;
         export type ClientFieldComponent = React.ComponentClass<Field.ComponentProps>;
@@ -63,23 +63,20 @@ export namespace SectionInterfaces {
         export type SectionComponentsCollection = Record<string, ClientSectionComponent>;
 
         export namespace Section {
-            export interface ReactContextValue {
+            export interface SectionsEnvironment extends RouteComponentProps {
                 updateState: updateStateCallback,
                 computations: SchemaCallbackCollection,
                 sectionComponents: SectionComponentsCollection,
                 fieldComponents: FieldComponentsCollection,
-                context: DataContext | null,
-                styles: Record<string, string>,
-                history: any,
-                location: any,
-                match: any
+                styles: Record<string, string>
             }
 
             export interface TopState {
                 data: Record<string, any> | null,
                 schema: Record<string, any> | null,
                 context: Record<string, any> | null,
-                parsedSchema: ParsedSchema | null
+                parsedSchema: ParsedSchema | null,
+                tokenParams: TokenParams
             }
 
             export interface TopProps extends RouteComponentProps {
@@ -96,7 +93,7 @@ export namespace SectionInterfaces {
                 level?: number
             }
 
-            export interface EntryPropsIn {
+            export interface EntryPropsIn extends RouteComponentProps {
                 styles: Styles,
                 fieldComponents: FieldComponentsCollection,
                 sectionComponents: SectionComponentsCollection,
@@ -105,30 +102,30 @@ export namespace SectionInterfaces {
                 parsedSchema: ParsedSchema | null,
                 level?: number,
                 updateState: updateStateCallback,
-                history: any,
-                location: any,
-                match: any
+                fieldNode: () => React.FunctionComponent<Field.NodeProps>,
+                sectionNode: () => React.FunctionComponent<NodeProps>,
+                tokenParams: TokenParams
             }
 
             export interface EntryPropsAdditional {
-                tokenParams: TokenParams,
                 sections: Array<JSX.Element>,
                 fields: Array<JSX.Element>,
                 Comp: ClientSectionComponent
             }
 
+
             export interface ComponentProps {
                 sections: Array<JSX.Element>,
                 fields: Array<JSX.Element>,
-                ScopedSection: (props: NodeProps) => JSX.Element,
-                ScopedField: (props: Field.NodeProps) => JSX.Element,
+                SectionNode: React.FunctionComponent<NodeProps>,
+                FieldNode: React.FunctionComponent<Field.NodeProps>,
                 computations: SchemaCallbackCollection,
                 context: DataContext | null,
                 parsedSchema: ParsedSchema | null,
                 level?: number,
                 updateState: updateStateCallback,
                 styles: Styles,
-                tokenParams: TokenParams,
+                tokenParams: TokenParams
             }
 
             export interface ParsedSchema {
@@ -147,7 +144,7 @@ export namespace SectionInterfaces {
                 level?: number
             }
             
-            export interface EntryPropsIn {
+            export interface EntryPropsIn extends RouteComponentProps {
                 styles: Styles,
                 context: DataContext | null,
                 parsedSchema: ParsedSchema | null,
@@ -155,10 +152,8 @@ export namespace SectionInterfaces {
                 computations: SchemaCallbackCollection,
                 fieldComponents: FieldComponentsCollection,
                 sectionComponents: SectionComponentsCollection,
-                level?: number,
-                history: any,
-                location: any,
-                match: any
+                tokenParams: TokenParams,
+                level?: number
             }
 
             export interface EntryPropsAdditional {
@@ -175,6 +170,7 @@ export namespace SectionInterfaces {
                 handlers: Handlers,
                 errors: Array<string>,
                 parsedSchema: ParsedSchema | null,
+                tokenParams: TokenParams,
                 level?: number,
                 computations: SchemaCallbackCollection
             }
@@ -233,7 +229,7 @@ export namespace DataParserInterfaces {
             data: DataContext,
             rootData?: DataContext,
             renderFunctions: SchemaCallbackCollection,
-            tokens?: Record<string, string | number>,
+            tokens?: TokenParams,
             defaultData?: any
         }
         export namespace Preprocessor {
@@ -241,6 +237,7 @@ export namespace DataParserInterfaces {
                 dataPath?: string,
                 schemaPath?: Array<string>,
                 meta?: Record<string, any>
+                tokens?: TokenParams
             }
 
             export interface ParserParamsEntry extends GeneralPreprocessorParamsInterface {

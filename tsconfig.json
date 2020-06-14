@@ -14,7 +14,8 @@
 		"baseUrl": "./src",
 		"resolveJsonModule": true,
 		"removeComments": true,
-		"downlevelIteration": true
+		"downlevelIteration": true,
+		"declaration": true
 	},
 	"include": [
 		"src/**/*"

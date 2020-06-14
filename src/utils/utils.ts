@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export const isBoolean = (possibleBoolean: unknown): boolean =>
     typeof possibleBoolean === 'boolean';
 
@@ -98,4 +99,8 @@ export const isIframe = (win: Window): boolean => {
         console.error('[error] isIframe:', e.message, e.stack);
     }
     return false;
+};
+
+export const hasOwnProperty = (object: Record<string | symbol, any>, key: string | symbol): boolean => {
+    return Object.prototype.hasOwnProperty.call(object, key);
 };
