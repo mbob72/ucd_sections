@@ -38,7 +38,7 @@ function asyncDataParser({ schema, data, rootData, defaultData, functions, token
             mode,
             tokens,
             defaultData
-        });
+        }, true);
         runAsyncGenerator(iterator, resolve, reject);
     });
 }
@@ -56,7 +56,7 @@ function syncDataParser({ schema, data, rootData, defaultData, functions, tokens
         mode,
         tokens,
         defaultData
-    });
+    }, true);
     let result: any;
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -79,20 +79,20 @@ function* genDataParser({ schema, data, rootData, defaultData, functions, tokens
         mode,
         tokens,
         defaultData
-    });
+    }, true);
 }
 
-function* switcher(params: DataParserV5.ParserParamsAny): Generator<any, any, any> {
+function* switcher(params: DataParserV5.ParserParamsAny, entry = false): Generator<any, any, any> {
     const { dataLink, mode } = params;
     // shallow or deep mode
     const modeCode = mode & 0b1100 || 0b1100;
-    if (typeof dataLink === 'string') {
+    if (typeof dataLink === 'string' && dataLink) {
         return yield* dataLinkParser({ ...params, dataLink: getDataLink(dataLink) });
     } else if (isObject(dataLink)) {
-        if (modeCode === 0b1000) return dataLink;
+        if (!entry && modeCode === 0b1000) return dataLink;
         return yield* objectParser(<DataParserV5.ParserParamsObject>params);
     } else if (Array.isArray(dataLink)) {
-        if (modeCode === 0b1000) return dataLink;
+        if (!entry && modeCode === 0b1000) return dataLink;
         return yield* arrayParser(<DataParserV5.ParserParamsArray>params);
     } else if (typeof dataLink === 'undefined') {
         console.warn('[warning] dataParserV5: dataLink is undefined.');
@@ -132,6 +132,7 @@ function* objectParser(params: DataParserV5.ParserParamsObject): Generator<any, 
         return a;
     }
     // todo: add a functionParser: { _function_: "", _params_: [...] } to simplify complex expressions in schemas.
+    // todo: add a keyParser
     const result = {};
     for (const key of Object.getOwnPropertyNames(others)) {
         if (modeCode !== 3) {
