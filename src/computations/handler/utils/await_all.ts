@@ -1,17 +1,17 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import ValidationError from '../errors/validation_error';
 import BreakPromiseChainError from '../errors/break_promise_chain_error';
 
 /**
  * This method returns a promise, that awaits for all promise chains of the current form.
- * @param {Array<Promise>} chains
- * @returns {{rejectCallback: null, promise: Promise<Object[]>}}
  */
-const awaitAll = (chains) => {
-    let rejectControlPromise = null;
+const awaitAll = (chains: Promise<any>[]): { rejectCallback: (error: Error) => void, promise: Promise<any> } => {
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    let rejectControlPromise: (error: Error) => void = () => {};
     const controlPromise = new Promise((resolve, reject) => {
         rejectControlPromise = reject;
     });
-    const promises = [];
+    const promises: Promise<any>[] = [];
     for (let i = 0; i < chains.length; i++) {
         const chain = chains[i];
         const promise = new Promise((resolve) => {

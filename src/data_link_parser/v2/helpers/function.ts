@@ -1,21 +1,21 @@
-import { DataParserError } from '../../../data_parser/utils';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { DataParserError } from '../data_parser_error';
 import inAllowedSymbols from '../../utils/in_allowed_symbols';
 import { expressionParser } from './index';
+import { DataLinkParserInterfaces } from 'types/types';
 
 /**
  * The FunctionParser reads a part of the dataLink string
  * that starts from $ symbol and ends by (.
- * @param {Params} params
- * @returns {*}
  */
-const functionParser = function* (params) {
-    const { dataLink, functions } = params;
+const functionParser = function* (params: DataLinkParserInterfaces.v2.Params): Generator<any, any, any> {
+    const { dataLink, functions, data } = params;
     let current = dataLink.getCurrentValue();
     if (current[1] !== '$') {
-        throw new DataParserError(DataParserError.ERRORS.ITERATOR_ERROR);
+        throw new DataParserError(DataParserError.ERRORS.ITERATOR_ERROR, data, dataLink);
     }
     if (!inAllowedSymbols(current[2])) {
-        throw new DataParserError(DataParserError.ERRORS.FUNCTION_NAMING);
+        throw new DataParserError(DataParserError.ERRORS.FUNCTION_NAMING, data, dataLink);
     }
     current = dataLink.getNextValue();
     let functionName = '';
@@ -32,9 +32,9 @@ const functionParser = function* (params) {
             !dataLink.isEnd() &&
             !inAllowedSymbols(current[2])
         ) {
-            throw new DataParserError(DataParserError.ERRORS.FUNCTION_NAMING);
+            throw new DataParserError(DataParserError.ERRORS.FUNCTION_NAMING, data, dataLink);
         }
-        throw new DataParserError(DataParserError.ERRORS.FUNCTION_UNKNOWN);
+        throw new DataParserError(DataParserError.ERRORS.FUNCTION_UNKNOWN, data, dataLink);
     }
     if (current[2] === '(') {
         dataLink.getNextValue();

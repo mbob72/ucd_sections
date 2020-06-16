@@ -1,11 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import arrayParser from './array';
 import expressionParser from './expression';
 import functionParser from './function';
 import linkParser from './link';
 import objectParser from './object';
 import escapedPlainParser from './plain';
-import { DataParserError } from '../../../data_parser/utils/data_parser_error';
-import DataLink from '../data_link';
+import { DataParserError } from '../data_parser_error';
+import { DataLink } from '../';
+import { DataLinkParserInterfaces } from 'types/types';
 
 export {
     arrayParser,
@@ -22,26 +24,26 @@ export {
  * @param {ParserParams} params
  * @returns {*}
  */
-const indexParser = (params) => {
-    const { dataLink } = params;
+const indexParser = function* (params: DataLinkParserInterfaces.v2.Params): Generator<any, any, any> {
+    const { dataLink, data } = params;
     if (!(dataLink instanceof DataLink))
-        throw new DataParserError(DataParserError.ERRORS.DATA_LINK_TYPE);
+        throw new DataParserError(DataParserError.ERRORS.DATA_LINK_TYPE, data, dataLink);
     const symbol = dataLink.getCurrentValue()[1];
     switch (symbol) {
         case '@': // link part
-            return linkParser(params);
+            return yield* linkParser(params);
         case '$': // function part
-            return functionParser(params);
+            return yield* functionParser(params);
         case '{': // object part
-            return objectParser(params);
+            return yield* objectParser(params);
         case '[': // array part
-            return arrayParser(params);
+            return yield* arrayParser(params);
+        case '(': // expression part
+            return yield* expressionParser(params);
         case '`': // escaped by the `` symbols string part
             return escapedPlainParser(params);
-        case '(': // expression part
-            return expressionParser(params);
         default:
-            throw new DataParserError(DataParserError.ERRORS.DEFAULT);
+            throw new DataParserError(DataParserError.ERRORS.DEFAULT, data, dataLink);
     }
 };
 

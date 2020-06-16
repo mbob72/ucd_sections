@@ -7,14 +7,13 @@ import {
     isRootLink,
 } from '../../data_link_parser/utils';
 import getDataLink from '../utils/data_link_cache';
-import * as renderFunctions from '../../computations/index';
-import { linkParser } from '../../data_link_parser/v1/helpers';
+import * as renderFunctions from '../../computations/functions';
+import { syncDataParser } from '../v5';
 import IncrementGenerator from '../utils/increment_generator';
 import deepMerge from '../../utils/deep_merge';
 import { DataParserInterfaces, SchemaInterfaces } from 'types/types';
 import DataParserV4 = DataParserInterfaces.v4.Preprocessor;
 import { ProcessedObject } from 'utils/types';
-import { simpleDataParser, parseSchemaFields } from './simple_data_parser';
 
 // todo: this file must be removed. All schemas should be parsed inside the sections logic. Schema pre-processing is very difficult for maintenance.
 
@@ -34,6 +33,7 @@ const templateIndexNames: Array<string> = [];
 
 /**
  * Entry point of the dataParser.
+ * Warning! This dataParser is a schema preprocessor that prepares schema and data for processing only in the sections/v4.
  */
 const dataParser = (params: DataParserV4.ParserParamsEntry): { schema: Record<string, any>, context: Record<string | symbol, any> } => {
     params.renderFunctions =
@@ -68,8 +68,6 @@ dataParser.renderFunctions = renderFunctions;
 
 /**
  * Calls a function corresponding the passed dataLink type.
- * @param {Params} params
- * @returns {any[]|null|Array|*}
  */
 const switcher = (params: DataParserV4.ParserParamsAny): any => {
     const { dataLink, data } = params;
@@ -90,9 +88,6 @@ const switcher = (params: DataParserV4.ParserParamsAny): any => {
 
 /**
  * Parses a schema array.
- * @param {Params} params
- * @param {string|null} mode
- * @return {any[]}
  */
 const arrayParser = (params: DataParserV4.ParserParamsArray, mode: string | null = null) => {
     const { dataLink } = params;
@@ -144,8 +139,6 @@ const arrayParser = (params: DataParserV4.ParserParamsArray, mode: string | null
 /**
  * Parses an object,
  * processes some special cases such as _sections_ and _fields_.
- * @param {Params} params
- * @return Object
  */
 const objectParser = (params: DataParserV4.ParserParamsObject): Record<string, any> => {
     const { dataLink }: { dataLink: SchemaInterfaces.GeneralSchemaObjectInterface & { _defaultData_?: Record<string, any>, _objectId_?: number } } = params;
@@ -293,8 +286,6 @@ const fieldParser = (params: DataParserV4.ParserParamsObject): Record<string, an
 };
 /**
  * Processes _computations_ object.
- * @param params
- * @return {Object}
  */
 const computationsParser = (params: DataParserV4.ParserParamsComputations) => {
     const { dataLink } = params;
@@ -342,8 +333,6 @@ const computationsParser = (params: DataParserV4.ParserParamsComputations) => {
 /**
  * Processes passed list of renderFunction strings,
  * if they contains a links they are replaced by context's keys.
- * @param params
- * @returns {[]}
  */
 const actionsParser = (params: DataParserV4.ParserParamsArray): Array<string | Record<string, any>> => {
     const { dataLink } = params;
@@ -366,9 +355,6 @@ const actionsParser = (params: DataParserV4.ParserParamsArray): Array<string | R
  * Resolves a schema template,
  * returns an array of schema objects with modified syntax strings.
  * Schema objects don't contain any data but only links to data in the context.
- * @param {Params} params
- * @param {string|null} mode
- * @returns {Array}
  */
 const templateParser = (params: DataParserV4.ParserParamsObject, mode: string | null = null) => {
     const { dataLink, rootData, context, meta, tokens = {} } = params;
@@ -484,15 +470,13 @@ const stringParser = (params: DataParserV4.ParserParamsString): any => {
     const links = dataLinkInstance.containsLinks()
         ? dataLinkInstance.extractLinks()
         : [];
-    if (links.length) {
+    if (links && links.length) {
         for (let link of links) {
-            const linkObj = getDataLink(link);
-            const value = linkParser({
-                dataLink: linkObj,
+            const value = syncDataParser(<DataParserInterfaces.v5.EntryParams>{
+                schema: link,
                 data,
-                rootData,
                 tokens,
-                renderFunctions,
+                functions: renderFunctions,
             });
             if (/[/@]:[a-zA-Z0-9_]+\//.test(link)) {
                 const newLink = replaceTokens(
@@ -568,9 +552,6 @@ const mergeLinks = ({ dataPath, link = '', middle }: { dataPath: string, link: s
 
 /**
  * Reads _dataLink_ string that overrides the data context in a schema.
- * @param {Params} params
- * @param {boolean} shouldBeAdded
- * @return {{data: {Object}, dataPath: {string}}}
  */
 const parseDataLink = (params: DataParserV4.ParserParamsString, shouldBeAdded = false) => {
     const { dataLink, rootData, context, renderFunctions, tokens } = params;
@@ -581,11 +562,11 @@ const parseDataLink = (params: DataParserV4.ParserParamsString, shouldBeAdded = 
         ? dataLink.replace(/\/<.+>$/, '')
         : dataLink;
     dataPath = mergeLinks(<{ dataPath: string, link: string }>{ dataPath, link: pureDataLink });
-    data = linkParser({
-        dataLink: getDataLink(dataLink),
+    data = syncDataParser(<DataParserInterfaces.v5.EntryParams>{
+        schema: dataLink,
         data,
         rootData,
-        renderFunctions,
+        functions: renderFunctions,
         tokens,
     });
     if (shouldBeAdded && !Object.prototype.hasOwnProperty.call(context, dataPath))
@@ -595,10 +576,6 @@ const parseDataLink = (params: DataParserV4.ParserParamsString, shouldBeAdded = 
 
 /**
  * Returns a parsed schema based on the passed schema template and adds to the context new values.
- * @param {string} dataPath
- * @param {Object} template
- * @returns {{ schema: {Object}, context: {Object} }} - the schema is parsed template,
- *                                                      the context is a new context only with new keys it should be merged with the main context.
  */
 export const templateAddInfo = ({ dataPath = '@/', template }: { dataPath: string, template: any }): any => {
     if (!dataPath || typeof dataPath !== 'string' || !isLink(dataPath))
@@ -609,9 +586,6 @@ export const templateAddInfo = ({ dataPath = '@/', template }: { dataPath: strin
 };
 /**
  * Returns a list of keys of the main context that must be deleted.
- * @param {string} dataLink
- * @param {Object} context
- * @returns {string[]}
  */
 export const templateDeleteInfo = (dataLink: string, context: Record<string | symbol, any>): Array<string> => {
     // todo: should return keys for deletion by a computation function. Now it changes the context directly.
@@ -620,5 +594,5 @@ export const templateDeleteInfo = (dataLink: string, context: Record<string | sy
     return Object.keys(context).filter((item) => item.startsWith(dataLink));
 };
 
-export { dataParser, simpleDataParser, parseSchemaFields };
+export { dataParser };
 export default dataParser;

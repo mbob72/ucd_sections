@@ -4,8 +4,8 @@ import { getHandler } from '../../computations/handler/v2';
 import { strictlyIsObject } from '../../utils';
 import { SectionEntry } from './section';
 import { FieldEntry } from './field';
-import * as builtInSyncComputations from '../../computations';
-import * as experimental from '../../computations/experimental';
+import * as builtInSyncComputations from '../../computations/functions';
+// import * as experimental from '../../computations/experimental';
 import * as builtInAsyncComputations from '../../computations/async_computations';
 import { SectionInterfaces, DataContext } from 'types/types';
 import SectionV4 = SectionInterfaces.v4.Section;
@@ -23,7 +23,7 @@ class TopSection extends React.Component<SectionV4.TopProps, SectionV4.TopState>
             ...computations,
             ...builtInSyncComputations,
             ...builtInAsyncComputations,
-            ...experimental,
+            // ...experimental,
         };
         const tokenParams = { ...qs.parse(history.location.search) };
         this.sectionEnvironment = {
@@ -163,7 +163,7 @@ class TopSection extends React.Component<SectionV4.TopProps, SectionV4.TopState>
         if (!(data && strictlyIsObject(data) && schema && strictlyIsObject(schema)))
             return null;
         this.sectionEnvironment.updateState = getHandler({
-            schema: parsedSchema,
+            schema: parsedSchema || {}, // warning: is it right to use OR statement here?
             computations: this.sectionEnvironment.computations,
             updateState: this.updateContext,
         });

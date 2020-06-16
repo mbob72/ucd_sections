@@ -1,9 +1,11 @@
 import { RouteComponentProps } from 'react-router';
+import { DataLink } from 'data_link_parser/v2';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type ExtendedPropertyDescriptorMap = PropertyDescriptorMap | Record<symbol, PropertyDescriptor>
 export type DataContext = Record<string & symbol, any> | null;
-export type SchemaCallbackCollection = Record<string, ComputationsInterfaces.SchemaCallbackSimple | ComputationsInterfaces.SchemaCallbackForComputations>;
+export type SchemaCallbackCollection = Record<string, ComputationsInterfaces.SchemaCallbackSimple | ComputationsInterfaces.SchemaCallbackForComputations | Record<string, any>>;
+export type SchemaCallbackList = Array<string | ComputationsInterfaces.SchemaCallbackSimple | ComputationsInterfaces.SchemaCallbackForComputations>;
 export type Primitives = string | number | boolean | symbol | null;
 type TokenParams = qs.ParsedQs;
 
@@ -55,7 +57,17 @@ export namespace SchemaInterfaces {
 
 export namespace SectionInterfaces {
     export namespace v4 {
-        type updateStateCallback = (data: DataContext) => void;
+        export interface UpdateStateCallbackParam extends RouteComponentProps {
+            value: ComputationsInterfaces.ComputationValue,
+            context: DataContext,
+            actions: SchemaCallbackList,
+            after: SchemaCallbackList,
+            currentSchemaObject: Record<string, any>,
+            tokenParams: TokenParams
+        }
+        export interface updateStateCallback {
+            (params: UpdateStateCallbackParam): void;
+        }
         export type Styles = Record<string, string>;
         export type ClientFieldComponent = React.ComponentClass<Field.ComponentProps>;
         export type ClientSectionComponent = React.ComponentClass<Section.ComponentProps>;
@@ -221,6 +233,20 @@ export namespace ComputationsInterfaces {
         location: Location,                                                 // window.location
         match: any // todo: needs to be clarified...
     }
+
+    export interface AfterActionsData {
+        actions: SchemaCallbackList,
+        value: ComputationsInterfaces.ComputationValue,
+        currentSchemaObject: Record<string, any>
+    }
+
+    export interface FormPromiseData {
+        mainReject?: (error: Error) => void,
+        newContext: DataContext,
+        computeChains: Record<string, Promise<any>>,
+        afterActions: Record<string, AfterActionsData>,
+        breakControls: Record<string, (error: Error) => void>
+    }
 }
 
 export namespace DataParserInterfaces {
@@ -319,5 +345,17 @@ export namespace DataParserInterfaces {
 
 export namespace DataLinkParserInterfaces {
     export namespace v1 {}
-    export namespace v2 {}
+    export namespace v2 {
+        // eslint-disable-next-line @typescript-eslint/ban-types
+        export type DataLinkParserResultValue = string | number | boolean | null | undefined | object | ComputationsInterfaces.SchemaCallbackSimple | ComputationsInterfaces.SchemaCallbackForComputations | ComputationsInterfaces.SyncComputation | ComputationsInterfaces.AsyncComputation | ComputationsInterfaces.GeneratorComputation;
+        export type DataLinkParserGenerator = Generator<DataLinkParserResultValue | Promise<DataLinkParserResultValue>, DataLinkParserResultValue, DataLinkParserResultValue> | never;
+        export interface Params {
+            data: Record<string | symbol, any>,
+            rootData: Record<string | symbol, any>,
+            functions: SchemaCallbackCollection,
+            tokens: Record<string, string | number>,
+            defaultValue: any,
+            dataLink: DataLink
+        }
+    }
 }

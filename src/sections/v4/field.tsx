@@ -9,11 +9,10 @@ import {
 
 import { isEmpty } from '../../utils';
 import { isDataLink } from '../../data_link_parser/utils';
-import dataLinkParser from '../../data_link_parser/v1';
 import getDataLink from '../../data_parser/utils/data_link_cache';
 import { RouteComponentProps } from 'react-router';
-import { simpleDataParser } from '../../data_parser/v4/simple_data_parser';
-import { SectionInterfaces, SchemaInterfaces, DataContext } from 'types/types';
+import { syncDataParser } from '../../data_parser/v5';
+import { SectionInterfaces, DataContext, SchemaCallbackList, TokenParams, DataParserInterfaces } from 'types/types';
 import FieldV4 = SectionInterfaces.v4.Field;
 
 const EVENTS = {
@@ -26,8 +25,8 @@ const getSetStateParams = (
     valueLink: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     value: any,
-    schema: FieldV4.ParsedSchema | null,
-    actions: Record<string, string & SchemaInterfaces.FieldValue>,
+    schema: FieldV4.ParsedSchema,
+    actions: SchemaCallbackList,
     after: Array<string>,
     context: DataContext,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -35,8 +34,9 @@ const getSetStateParams = (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     location: any, // todo: should be clarified...
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tokenParams: any
-) => {
+    history: any, // todo: should be clarified...
+    tokenParams: TokenParams
+): SectionInterfaces.v4.UpdateStateCallbackParam => {
     const dataLink = valueLink && '@' + valueLink.replace(/@?\\/g, '');
     return {
         value: { dataLink, value },
@@ -46,6 +46,7 @@ const getSetStateParams = (
         context,
         match,
         location,
+        history,
         tokenParams
     };
 };
@@ -98,6 +99,7 @@ export const FieldEntry: React.ComponentClass<FieldV4.EntryPropsIn> = compose<Fi
             updateState,
             match,
             location,
+            history,
             fieldComponents,
             computations,
             loading,
@@ -125,20 +127,20 @@ export const FieldEntry: React.ComponentClass<FieldV4.EntryPropsIn> = compose<Fi
                 throw new Error('[error] SectionField: _after_ must be an array.');
             const visible =
         typeof _visible_ === 'string'
-            ? simpleDataParser({
-                dataLink: _visible_,
+            ? syncDataParser({
+                schema: _visible_,
                 data: context,
-                renderFunctions: computations,
+                functions: computations,
                 tokens: tokenParams
-            })
+            } as DataParserInterfaces.v5.EntryParams)
             : !!_visible_;
             if (isDataLink(_type_)) {
-                _type_ = dataLinkParser({
-                    dataLink: getDataLink(_type_),
+                _type_ = syncDataParser({
+                    schema: _type_,
                     data: context,
-                    renderFunctions: computations,
+                    functions: computations,
                     tokens: tokenParams
-                });
+                } as DataParserInterfaces.v5.EntryParams);
                 if (typeof _type_ !== 'string') {
                     console.error('[error] SectionField: _type_ must be a string.');
                     _type_ = '';
@@ -162,12 +164,13 @@ export const FieldEntry: React.ComponentClass<FieldV4.EntryPropsIn> = compose<Fi
                         getSetStateParams(
                             _value_,
                             e.target.value,
-                            parsedSchema,
+                            parsedSchema as SectionInterfaces.v4.Field.ParsedSchema,
                             actions,
                             after,
                             context,
                             match,
                             location,
+                            history,
                             tokenParams
                         )
                     );

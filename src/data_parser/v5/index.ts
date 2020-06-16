@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable key-spacing,indent */
 import dataLinkParser from '../../data_link_parser/v2';
-import getDataLink from './utils/data_link_cache';
+import getDataLink from '../utils/data_link_cache';
 import { isObject } from '../../data_link_parser/utils';
 import runAsyncGenerator from '../utils/run_async_generator';
-import { DataParserInterfaces } from 'types/types';
+import { DataParserInterfaces, DataLinkParserInterfaces } from 'types/types';
 import DataParserV5 = DataParserInterfaces.v5;
 
 /**
@@ -87,7 +87,7 @@ function* switcher(params: DataParserV5.ParserParamsAny, entry = false): Generat
     // shallow or deep mode
     const modeCode = mode & 0b1100 || 0b1100;
     if (typeof dataLink === 'string' && dataLink) {
-        return yield* dataLinkParser({ ...params, dataLink: getDataLink(dataLink) });
+        return yield* dataLinkParser(<DataLinkParserInterfaces.v2.Params>{ ...params, dataLink: getDataLink(dataLink), defaultValue: null });
     } else if (isObject(dataLink)) {
         if (!entry && modeCode === 0b1000) return dataLink;
         return yield* objectParser(<DataParserV5.ParserParamsObject>params);

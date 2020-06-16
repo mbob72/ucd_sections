@@ -1,3 +1,5 @@
+import { hasOwnProperty } from '../../utils/utils';
+
 /**
  * Converter's rules
  * @type {Object}
@@ -16,7 +18,7 @@ const types = {
  * @returns {*}
  */
 const primitivesConverter = (str) => {
-    return typeof str === 'string' && types.hasOwnProperty(str)
+    return typeof str === 'string' && hasOwnProperty(types, str)
         ? types[str]
         : str;
 };

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import ValidationError from '../errors/validation_error';
 import { isEmpty, isError, hasOwnProperty } from '../../../utils';
 import BreakPromiseChainError from '../errors/break_promise_chain_error';
@@ -6,28 +7,26 @@ import { isObject } from '../../../data_link_parser/utils';
 import { asyncDataParser, MODE } from '../../../data_parser/v5';
 import { runAsyncGenerator } from '../../../data_parser/utils';
 import { awaitAll } from '../utils';
+import { DataContext, SchemaCallbackCollection, SectionInterfaces, ComputationsInterfaces, DataParserInterfaces, SchemaCallbackList } from 'types/types';
+import SectionV4 = SectionInterfaces.v4;
+import CI = ComputationsInterfaces
 
 /**
  * This object contains promises that are related with forms according the _formId_.
  * @type {{}}
  */
-const formPromises = {};
+const formPromises: Record<string, CI.FormPromiseData> = {};
 
 /**
  * Returns a setState processor that works with computations actions.
  * This processor builds a promises chain from the passed actions list.
  * This processor breaks the previous computations chain for the current field if it is not finished yet.
- * @param {Object} context
- * @param {Object} schema - full schema
- * @param {Object} computations - collections of functions
- * @param {function} updateState
- * @returns {Function}
  */
-export const getHandler = ({ schema, computations, updateState }) => {
+export const getHandler = ({ schema, computations, updateState }: { schema: Record<string, any>, computations: SchemaCallbackCollection, updateState: (data: DataContext) => void }): SectionV4.updateStateCallback => {
     // todo: maybe _formId_ value should be based on schema name.
     const { _formId_ } = schema;
     if (typeof updateState !== 'function') throw new Error('SectionsComputations: update state callback must be a function.');
-    return ({ value, actions, after, context, currentSchemaObject, match, location }) => {
+    return ({ value, actions, after, context, currentSchemaObject, match, location }: SectionV4.UpdateStateCallbackParam) => {
         let { _objectId_ } = currentSchemaObject;
         _objectId_ = Number(_objectId_);
         if (Number.isNaN(_objectId_)) throw new Error('SectionsComputation: _objectId_ must be a number.');
@@ -35,8 +34,8 @@ export const getHandler = ({ schema, computations, updateState }) => {
 
         if (!hasOwnProperty(formPromises, _formId_)) {
             formPromises[_formId_] = {
-                mainReject: null,
-                newContext: deepCopy(context),
+                mainReject: void 0,
+                newContext: context ? deepCopy(context) : {},
                 computeChains: {},
                 afterActions: {},
                 breakControls: {}
@@ -104,17 +103,18 @@ export const getHandler = ({ schema, computations, updateState }) => {
             )
             .then(
                 () => {
+                    // todo: after actions should be processed by the same way as main computations chain.
                     // runs the "after actions"
                     // after chains should not affect the context.
                     // after chains is intended only for service operations (resize iframe, send request...).
-                    const chains = {};
+                    const chains: Record<string, Promise<any>> = {};
                     if (isEmpty(afterActions)) return;
                     const ids = Object.getOwnPropertyNames(afterActions);
                     for (const id of ids) {
                         const { actions, value, currentSchemaObject } = afterActions[id];
                         chains[id] = run(false, actions, value, currentSchemaObject, newContext, schema, computations);
                     }
-                    const { promise } = awaitAll(chains);
+                    const { promise } = awaitAll(Object.values(chains));
                     return promise;
                 },
                 (err) => {
@@ -129,16 +129,19 @@ export const getHandler = ({ schema, computations, updateState }) => {
 
 /**
  * Computations beginning.
- * @param controlStatus
- * @param actionsList
- * @param value
- * @param currentSchemaObject
- * @param context
- * @param schema
- * @param otherParams
- * @returns {Promise<*>}
  */
-function run (controlStatus, actionsList, value, currentSchemaObject, context, schema, ...otherParams) {
+function run (
+    controlStatus: boolean,
+    actionsList: SchemaCallbackList,
+    value: CI.ComputationValue,
+    currentSchemaObject: Record<string, any>,
+    context: DataContext,
+    schema: Record<string, any>,
+    computations: SchemaCallbackCollection,
+    match?: any,
+    location?: any,
+    updateState?: (data: DataContext) => void
+): Promise<CI.ComputationValue> {
     return new Promise((resolve, reject) => {
         const { _formId_ } = schema;
         const { _objectId_ } = currentSchemaObject;
@@ -147,10 +150,10 @@ function run (controlStatus, actionsList, value, currentSchemaObject, context, s
             throw new Error('[error] breakControls is not defined.');
         }
 
-        const g = actionsIterator(actionsList, value, currentSchemaObject, context, schema, ...otherParams);
+        const g = actionsIterator(actionsList, value, currentSchemaObject, context, schema, computations, match, location, updateState);
 
         let breakMark = false;
-        const stop = (err) => {
+        const stop = (err: Error): void => {
             try {
                 const { done } = g.throw(err);
                 if (!done) {
@@ -158,21 +161,21 @@ function run (controlStatus, actionsList, value, currentSchemaObject, context, s
                     breakMark = true;
                 }
                 // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-                controlStatus && delete breakControls[_objectId_];
+                if (controlStatus && breakControls && breakControls[_objectId_]) delete breakControls[_objectId_];
             } catch (e) {
                 reject(e);
             }
         };
         // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-        controlStatus && (breakControls[_objectId_] = stop);
+        if (controlStatus && breakControls && breakControls[_objectId_]) breakControls[_objectId_] = stop;
 
-        const next = (v) => {
+        const next = (v?: CI.ComputationValue): void => {
             try {
                 if (breakMark) return;
-                const item = g.next(v);
+                const item = g.next(<CI.ComputationValue>v);
                 const { value, done } = item;
-                if (done) resolve(value);
-                else value.then(next, reject);
+                if (done) resolve(<CI.ComputationValue>value);
+                else (<Promise<CI.ComputationValue>>value).then(next, reject);
             } catch (e) {
                 reject(e);
             }
@@ -184,15 +187,21 @@ function run (controlStatus, actionsList, value, currentSchemaObject, context, s
 
 /**
  * Iterates the passed actions list.
- * @param actionsList
- * @param value
- * @param otherParams
- * @returns {Generator<Promise<never>|Promise|Promise<*>|*, void, *>}
  */
-function* actionsIterator (actionsList, value, ...otherParams) {
+function* actionsIterator (
+    actionsList: SchemaCallbackList,
+    value: CI.ComputationValue,
+    currentSchemaObject: Record<string, any>,
+    context: DataContext,
+    schema: Record<string, any>,
+    computations: SchemaCallbackCollection,
+    match?: any,
+    location?: any,
+    updateState?: any
+): Generator<Promise<CI.ComputationValue>, CI.ComputationValue | undefined | void | never, CI.ComputationValue> {
     try {
         for (const act of actionsList) {
-            value = yield compute(act, value, ...otherParams);
+            value = yield compute(<CI.SchemaCallbackForComputations | string | Record<string, any>>act, value, currentSchemaObject, context, schema, computations, match, location, updateState);
         }
         return value;
     } catch (e) {
@@ -209,18 +218,18 @@ function* actionsIterator (actionsList, value, ...otherParams) {
  * if the called function returns a not Promise object, it is resolved "as is",
  * if the called function returns a Promise - we wait until the promise's state is changed and process it.
  * In this function, we register a reject function to take the possibility to break the current promise chain.
- * @param {*} act - In most cases, this is a reference to a function.
- * @param {Object} value
- * @param {Object} currentSchemaObject
- * @param {Object} context
- * @param {Object} schema
- * @param {Object} computations
- * @param match
- * @param location
- * @param {function} updateState
- * @returns {Promise<never>|Promise|Promise<unknown>}
  */
-const compute = (act, value, currentSchemaObject, context, schema, computations, match, location, updateState) => {
+const compute = (
+    act: CI.SchemaCallbackForComputations | string | Record<string, any>,
+    value: CI.ComputationValue,
+    currentSchemaObject: Record<string, any>,
+    context: DataContext,
+    schema: Record<string, any>,
+    computations: SchemaCallbackCollection,
+    match?: any,
+    location?: any,
+    updateState?: any
+): Promise<CI.ComputationValue> => {
     return new Promise((resolve, reject) => {
         const finalResolve = (val) => {
             if (!isObject(val)) {
@@ -232,7 +241,7 @@ const compute = (act, value, currentSchemaObject, context, schema, computations,
                 reject(new Error('Returned object must contain "value" and "dataLink" properties.'));
             } else resolve(val);
         };
-        asyncDataParser({ schema: act, functions: computations, data: context, rootData: context, mode: MODE.USER_DEEP })
+        asyncDataParser(<DataParserInterfaces.v5.EntryParams>{ schema: act, functions: computations, data: context, rootData: context, mode: MODE.USER_DEEP, defaultData: null, tokens: {} })
             .then((act) => {
                 if (typeof act === 'function') {
                     const res = act(value, { context, schema, currentSchemaObject, match, location, computations, updateState });
@@ -255,18 +264,14 @@ const compute = (act, value, currentSchemaObject, context, schema, computations,
 
 /**
  * Writes an error messages array to the passed schema object.
- * @param {Object} error
- * @param {Object} schema
- * @param {Proxy} context - Proxy wrapped context.
- * @returns {*}
  */
-const writeErrors = (error, schema, context) => {
+const writeErrors = (error: Error, schema: Record<string, any>, context: DataContext): void => {
     const { _objectId_ } = schema;
     const serviceKey = Symbol.for(_objectId_);
-    const serviceObject = context[serviceKey] || {};
-    if (isError(error)) {
+    const serviceObject = context ? context[serviceKey] : {};
+    if (isError(error) && context) {
         context[serviceKey] = { ...serviceObject, errors: [ error.message ] };
-        return undefined;
+        return;
     }
     console.warn('[debug] error', Object.prototype.toString.call(error));
     console.error('Unhandled error! Error object must be instance of the Error.');
@@ -275,13 +280,11 @@ const writeErrors = (error, schema, context) => {
 
 /**
  * Removes an error messages array from the corresponding service object in the context.
- * @param {Object} schema
- * @param {Proxy} context
  */
-const clearErrors = (schema, context) => {
+const clearErrors = (schema: Record<string, any>, context: DataContext): void => {
     const { _objectId_ } = schema;
     const serviceKey = Symbol.for(_objectId_);
-    const serviceObject = context[serviceKey] || {};
+    const serviceObject = context ? context[serviceKey] : {};
     if ('errors' in serviceObject) delete serviceObject.errors;
-    context[serviceKey] = { ...serviceObject };
+    if (context) context[serviceKey] = { ...serviceObject };
 };

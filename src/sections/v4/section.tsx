@@ -3,11 +3,10 @@ import { branch, compose, renderNothing, withProps } from 'recompose';
 
 import { strictlyIsObject } from '../../utils';
 import { isDataLink } from '../../data_link_parser/utils';
-import dataLinkParser from '../../data_link_parser/v1';
-import getDataLink from '../../data_parser/utils/data_link_cache';
+import { syncDataParser } from '../../data_parser/v5';
 import { RouteComponentProps } from 'react-router';
 
-import { SectionInterfaces } from '../../types/types';
+import { SectionInterfaces, DataParserInterfaces } from '../../types/types';
 import SectionV4 = SectionInterfaces.v4.Section;
 
 const WrappedClientSectionComponent = ({
@@ -56,24 +55,24 @@ export const SectionEntry: React.ComponentClass<SectionV4.EntryPropsIn> = compos
             if (!Array.isArray(_sections_) || !Array.isArray(_fields_))
                 throw new Error('Sections: _sections_/_fields_ must be an array.');
             if (isDataLink(_type_)) {
-                _type_ = dataLinkParser({
-                    dataLink: getDataLink(_type_),
+                _type_ = syncDataParser({
+                    schema: _type_,
                     data: context,
-                    renderFunctions: computations,
+                    functions: computations,
                     tokens: tokenParams
-                });
+                } as DataParserInterfaces.v5.EntryParams);
                 if (typeof _type_ !== 'string') {
                     console.error('[error] SectionEntry: _type_ must be a string.');
                     _type_ = '';
                 }
             }
             if (isDataLink(_visible_)) {
-                _visible_ = dataLinkParser({
-                    dataLink: getDataLink(_visible_),
+                _visible_ = syncDataParser({
+                    schema: _visible_,
                     data: context,
-                    renderFunctions: computations,
+                    functions: computations,
                     tokens: tokenParams
-                });
+                } as DataParserInterfaces.v5.EntryParams);
             }
             const Comp = _type_ && _type_ in sectionComponents && sectionComponents[_type_]
                 ? sectionComponents[_type_]

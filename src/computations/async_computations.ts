@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import BreakPromiseChainError from './handler/errors/break_promise_chain_error';
+import { ComputationsInterfaces as CI } from 'types/types';
 
 /** For debugging. */
-export const log = (marker = null, additional = null) => {
-    return (input, env) => {
+export const log: CI.SchemaCallbackForComputations = (marker?: string, additional?: string): CI.SyncComputation => {
+    return (input: CI.ComputationValue, env: CI.ComputationEnvironment): CI.ComputationValue => {
         if (marker && typeof marker !== 'string')
             throw new Error(
                 '[error] log computation: marker must be a string.'
@@ -17,8 +19,8 @@ export const log = (marker = null, additional = null) => {
 };
 
 /** Stub-action that breaks computations. */
-export const breakAction = () => {
-    return () => {
+export const breakAction: CI.SchemaCallbackForComputations = (): CI.SyncComputation => {
+    return (): never => {
         throw new BreakPromiseChainError();
     };
 };
@@ -28,25 +30,29 @@ export const breakAction = () => {
  * This method expects a link without the dog symbol, for example: "/data/products" instead of "@/data/products".
  * And the passed link must be an absolute link (started with "/" symbol).
  */
-export const overrideInputValue = (dataLink, value) => {
-    return () => {
+export const overrideInputValue: CI.SchemaCallbackForComputations = (dataLink: string, value: any): CI.SyncComputation => {
+    return (): CI.ComputationValue => {
         dataLink = '@' + dataLink;
         return { dataLink, value };
     };
 };
 
 /** Writes the passed value to the context. */
-export const setValue = () => {
-    return (input, { context, currentSchemaObject }) => {
+export const setValue: CI.SchemaCallbackForComputations = (): CI.SyncComputation => {
+    return (input: CI.ComputationValue, { context }: CI.ComputationEnvironment): CI.ComputationValue => {
         const { dataLink, value } = input;
-        context[dataLink] = value;
+        if (context) {
+            context[dataLink] = value;
+        } else {
+            console.warn('[warning] Context is empty!');
+        }
         return input;
     };
 };
 
 /** Sends the context to a state before the promise chain is completed. */
-export const updateContext = () => {
-    return (input, { updateState, context }) => {
+export const updateContext: CI.SchemaCallbackForComputations = (): CI.SyncComputation => {
+    return (input: CI.ComputationValue, { updateState, context }: CI.ComputationEnvironment): CI.ComputationValue => {
         // todo: is it necessary to make a copy of the context?
         updateState(context);
         return input;
@@ -56,8 +62,8 @@ export const updateContext = () => {
 /**
  * This computation expects a function or a list of functions in the input.value param and calls the one with the passed environment.
  */
-export const runAction = () => {
-    return (input, env) => {
+export const runAction: CI.SchemaCallbackForComputations = (): CI.AsyncComputation => {
+    return (input: CI.ComputationValue, env: CI.ComputationEnvironment): Promise<CI.ComputationValue> | never => {
         const { value: action } = input;
         if (Array.isArray(action)) {
             if (!action.length)
@@ -87,8 +93,8 @@ export const runAction = () => {
  * Applies the passed pure functions to the passed input value.
  * The filters array should be a list of synchronous pure functions, that clarify the passed value.
  */
-export const applyFilters = (...filters) => {
-    return (input) => {
+export const applyFilters: CI.SchemaCallbackForComputations = (...filters: CI.SchemaCallbackSimple[]): CI.SyncComputation => {
+    return (input: CI.ComputationValue): CI.ComputationValue | never => {
         if (!filters.length) return input;
         let { value } = input;
         for (const filter of filters) {
@@ -103,11 +109,8 @@ export const applyFilters = (...filters) => {
 const debouncedPromises = new Map();
 /**
  * Process only last change when the passed time is left.
- * @param {function} computation
- * @param {number} time
- * @returns {function(*=, *=): Promise<unknown>}
  */
-export const debounce = (computation, time) => {
+export const debounce: CI.SchemaCallbackForComputations = (computation: CI.AsyncComputation, time: number): CI.AsyncComputation | never => {
     if (typeof computation !== 'function')
         throw new Error(
             '[error] debounce: The computation must be a function.'
@@ -115,7 +118,7 @@ export const debounce = (computation, time) => {
     time = Number(time);
     if (Number.isNaN(time))
         throw new Error('[error] debounce: The time must be a number.');
-    return (input, env) => {
+    return (input: CI.ComputationValue, env: CI.ComputationEnvironment): Promise<CI.ComputationValue> => {
         return new Promise((resolve, reject) => {
             const {
                 currentSchemaObject: { _objectId_: key },
@@ -157,11 +160,11 @@ export const debounce = (computation, time) => {
 };
 
 /** Makes a pause in the current computation chain */
-export const delay = (timeOut = 0) => {
+export const delay: CI.SchemaCallbackForComputations = (timeOut = 0): CI.AsyncComputation => {
     timeOut = Number(timeOut);
     if (Number.isNaN(timeOut))
         throw new Error('[error] Delay: delay value must be a number.');
-    return (input, env) => {
+    return (input: CI.ComputationValue): Promise<CI.ComputationValue> => {
         return new Promise((resolve) =>
             setTimeout(() => resolve(input), timeOut)
         );

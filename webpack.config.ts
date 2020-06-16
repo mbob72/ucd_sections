@@ -25,7 +25,10 @@ const Config = (): Configuration => ({
         rules: [
             {
                 test: /\.(t|j)sx?$/,
-                exclude: [ /node_modules/ ],
+                exclude: [
+                    /node_modules/,
+                    /\.test\.(t|j)s$/
+                ],
                 loader: 'ts-loader',
                 options: {
                     configFile: path.join(__dirname, './tsconfig.json'),
@@ -35,6 +38,9 @@ const Config = (): Configuration => ({
             {
                 enforce: 'pre',
                 test: /\.js$/,
+                exclude: [
+                    /\.test\.(t|j)s$/
+                ],
                 loader: 'source-map-loader'
             }
         ]

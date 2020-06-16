@@ -1,15 +1,13 @@
 import indexParser from './helpers';
-import { DataParserError } from '../../data_parser/utils/data_parser_error';
+import { DataParserError } from './data_parser_error';
 import { DataLink } from './index';
-
+import { DataLinkParserInterfaces } from 'types/types';
+import DLPv2 = DataLinkParserInterfaces.v2;
 /**
  * Returns a string if the main result is not empty,
  * on top level all data should be concatenated and represented as a string.
- * @param result
- * @param mainResult
- * @returns {any}
  */
-const setResult = (result, mainResult) => {
+const setResult = (result: string, mainResult?: string): string => {
     return mainResult ? '' + mainResult + result : result;
 };
 /**
@@ -17,16 +15,12 @@ const setResult = (result, mainResult) => {
  * it delegates the work to helper parsers.
  * Helper parsers return a result of parsing and
  * a new state of the iterator.
- * @param {*} params
- * @returns {*}
  */
-const dataLinkParser = (params) => {
-    const { dataLink } = params;
+const dataLinkParser = function* (params: DLPv2.Params): DLPv2.DataLinkParserGenerator {
+    const { dataLink, data } = params;
     if (!(dataLink instanceof DataLink))
         throw new DataParserError(DataParserError.ERRORS.DATA_LINK_TYPE);
-    let mainResult;
-    let result;
-    mainResult = null;
+    let mainResult = '';
 
     try {
         for (const current of dataLink) {
@@ -37,8 +31,10 @@ const dataLinkParser = (params) => {
                 case '[': // array part
                 case '`': // escaped by the `` symbols string part
                 case '(': // expression part
-                    result = indexParser(params);
-                    mainResult = setResult(result, mainResult);
+                    mainResult = setResult(
+                        yield* indexParser(params),
+                        mainResult
+                    );
                     break;
                 case '\\':
                     // escaped by the \ symbol part
@@ -49,29 +45,15 @@ const dataLinkParser = (params) => {
                 case ']':
                 case ')':
                     // unprocessed close symbols
-                    throw new DataParserError(DataParserError.ERRORS.NESTING);
+                    throw new DataParserError(DataParserError.ERRORS.NESTING, data, dataLink);
                 default:
                     // plain symbol
-                    // todo: does it need in checking by the inAllowedSymbol function?
                     mainResult = setResult(current[1], mainResult);
                     break;
             }
             if (dataLink.isEnd()) break;
         }
     } catch (Err) {
-        if (Err instanceof DataParserError) {
-            const info = dataLink.getCursorPositionInfo();
-            Err.fullMessage =
-                Err.message +
-                ', dataLink: "' +
-                info +
-                '" at position ' +
-                dataLink.getCurrentIndex();
-            if (dataLink.isEnd()) {
-                Err.fullMessage += ' (out of the string)';
-            }
-            Err.data = params.data;
-        }
         console.error(Err);
         throw Err;
     }

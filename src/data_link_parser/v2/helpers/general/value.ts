@@ -1,9 +1,11 @@
-import { DataParserError } from '../../../../data_parser/utils/data_parser_error';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { DataParserError } from '../../data_parser_error';
 import indexParser from '../index';
 import inAllowedSymbols from '../../../utils/in_allowed_symbols';
 import primitivesConverter from '../../../utils/primitives_converter';
+import { DataLinkParserInterfaces } from 'types/types';
 
-const setResult = (data, result) => {
+const setResult = (data: any, result?: string): any => {
     if (typeof result === 'undefined') {
         result = data;
     } else {
@@ -14,14 +16,11 @@ const setResult = (data, result) => {
 
 /**
  * The ValueParser reads a value of arrays and objects of the dataLink string.
- * @param {ParserParams} params
- * @param {boolean} arrayContext - true means an array context, false means an object context
- * @returns {*}
  */
-const valueParser = (params, arrayContext) => {
-    const { dataLink } = params;
+const valueParser = function* (params: DataLinkParserInterfaces.v2.Params, arrayContext?: boolean): Generator<any, any, any> {
+    const { dataLink, data } = params;
     let current = dataLink.getCurrentValue();
-    let result;
+    let result: any;
     if (
         arrayContext === true &&
         current[0] !== '[' &&
@@ -32,12 +31,12 @@ const valueParser = (params, arrayContext) => {
         current[0] !== '(' &&
         current[0] !== ' '
     ) {
-        throw new DataParserError(DataParserError.ERRORS.ITERATOR_ERROR);
+        throw new DataParserError(DataParserError.ERRORS.ITERATOR_ERROR, data, dataLink);
     }
     for (current of dataLink) {
         switch (current[1]) {
             case ' ':
-                throw new DataParserError(DataParserError.ERRORS.DEFAULT);
+                throw new DataParserError(DataParserError.ERRORS.DEFAULT, data, dataLink);
             case '\\':
                 result = setResult(dataLink.getNextValue());
                 break;
@@ -47,20 +46,20 @@ const valueParser = (params, arrayContext) => {
             case '[': // array part
             case '`': // escaped by the `` symbols string part
             case '(': // expression part
-                result = setResult(indexParser(params));
+                result = setResult(yield* indexParser(params));
                 if (dataLink.isEnd())
-                    throw new DataParserError(DataParserError.ERRORS.NESTING);
+                    throw new DataParserError(DataParserError.ERRORS.NESTING, data, dataLink);
                 current = dataLink.getCurrentValue();
                 break;
             default:
                 // plain text
                 if (dataLink.isEnd())
-                    throw new DataParserError(DataParserError.ERRORS.NESTING);
+                    throw new DataParserError(DataParserError.ERRORS.NESTING, data, dataLink);
                 if (!inAllowedSymbols(current[1])) {
                     if (arrayContext) {
-                        throw new DataParserError(DataParserError.ERRORS.ARRAY_VALUE);
+                        throw new DataParserError(DataParserError.ERRORS.ARRAY_VALUE, data, dataLink);
                     } else {
-                        throw new DataParserError(DataParserError.ERRORS.OBJECT_VALUE);
+                        throw new DataParserError(DataParserError.ERRORS.OBJECT_VALUE, data, dataLink);
                     }
                 }
                 result = (result || '') + setResult(current[1]);
