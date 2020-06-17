@@ -129,7 +129,7 @@ const readToken = (params: DataLinkParserInterfaces.v2.Params, data: Record<stri
             ? tokens[token]
             : 0;
     if (!isObject(data) && !Array.isArray(data)) {
-        console.warn('Error: The data should be an object or an array!');
+        console.warn('Error: The data should be an object or an array!', data, dataLink.toString());
         return defaultValue;
     }
     const res = data[key];

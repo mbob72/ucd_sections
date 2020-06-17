@@ -60,33 +60,49 @@ export const updateContext: CI.SchemaCallbackForComputations = (): CI.SyncComput
 };
 
 /**
+ * Action with no any effects.
+ */
+export const blankAction = (): CI.SyncComputation => {
+    return (input: CI.ComputationValue): CI.ComputationValue => input;
+};
+
+/**
+ * Brach computation, call left statement if true, right if false.
+ */
+export const branchAction: CI.SchemaCallbackForComputations = (condition: boolean, trueStateAction: CI.MixedComputation = blankAction(), falseStateAction: CI.MixedComputation = blankAction()): CI.MixedComputation => {
+    return (input: CI.ComputationValue, env: CI.ComputationEnvironment): CI.MixedComputationResult | never => {
+        if (condition) return callAction(trueStateAction, input, env);
+        else return callAction(falseStateAction, input, env);
+    };
+};
+
+/**
  * This computation expects a function or a list of functions in the input.value param and calls the one with the passed environment.
  */
-export const runAction: CI.SchemaCallbackForComputations = (): CI.AsyncComputation => {
-    return (input: CI.ComputationValue, env: CI.ComputationEnvironment): Promise<CI.ComputationValue> | never => {
+export const runAction: CI.SchemaCallbackForComputations = (): CI.MixedComputation => {
+    return (input: CI.ComputationValue, env: CI.ComputationEnvironment): CI.MixedComputationResult | never => {
         const { value: action } = input;
-        if (Array.isArray(action)) {
-            if (!action.length)
-                throw new Error(
-                    '[error] runAction: array of function can not be empty.'
-                );
-            return action.reduce((acc, func) => {
-                if (typeof func !== 'function') {
-                    return acc.then(() => {
-                        throw new Error(
-                            `[error] runAction: array mus contain a list of functions. The type '${typeof func} is given.'`
-                        );
-                    });
-                }
-                return acc.then((value) => func(value, env));
-            }, Promise.resolve({}));
-        }
-        if (typeof action !== 'function')
-            throw new Error(
-                '[error] runAction: input.value must be a function.'
-            );
-        return action({}, env);
+        return callAction(action, { value: null, dataLink: '' }, env);
     };
+};
+
+/**
+ * Helper function, calls the passed action or a list of actions.
+ */
+const callAction = (action: CI.MixedComputation, input: CI.ComputationValue, env: CI.ComputationEnvironment): CI.MixedComputationResult | never => {
+    if (Array.isArray(action)) {
+        if (!action.length) throw new Error('[error] runAction: array of function can not be empty.');
+        return action.reduce((acc, func) => {
+            if (typeof func !== 'function') {
+                return acc.then(() => {
+                    throw new Error(`[error] runAction: array must contain a list of functions. The type '${typeof func} is given.'`);
+                });
+            }
+            return acc.then((value: CI.ComputationValue) => func(value, env));
+        }, Promise.resolve(input));
+    }
+    if (typeof action !== 'function') throw new Error('[error] runAction: input.value must be a function.');
+    return action(input, env);
 };
 
 /**

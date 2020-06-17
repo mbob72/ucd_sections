@@ -208,7 +208,13 @@ export namespace ComputationsInterfaces {
     }
     
     export interface GeneratorComputation {
-        (value: ComputationValue, environment: ComputationEnvironment): Iterator<ComputationValue | Promise<ComputationValue>, ComputationValue | Promise<ComputationValue>> | never;
+        (value: ComputationValue, environment: ComputationEnvironment): Generator<ComputationValue | Promise<ComputationValue>, ComputationValue | Promise<ComputationValue>, ComputationValue> | never;
+    }
+
+    export type MixedComputationResult = ComputationValue | Promise<ComputationValue> | Generator<ComputationValue | Promise<ComputationValue>, ComputationValue | Promise<ComputationValue>, ComputationValue>;
+
+    export interface MixedComputation {
+        (value: ComputationValue, environment: ComputationEnvironment): MixedComputationResult | never;
     }
     
     export interface SchemaCallbackSimple {
@@ -216,7 +222,7 @@ export namespace ComputationsInterfaces {
     }
     
     export interface SchemaCallbackForComputations {
-        (...args: Array<any>) : SyncComputation | AsyncComputation | GeneratorComputation | never
+        (...args: Array<any>) : MixedComputation | never
     }
     
     export interface ComputationValue { // Value of the current field.
