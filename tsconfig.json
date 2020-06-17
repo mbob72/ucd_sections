@@ -1,0 +1,33 @@
+{
+	"compilerOptions": {
+		"target": "ES5",
+		"lib": [ "ESNext", "DOM" ],
+        "sourceMap": true,
+        "noImplicitAny": false,
+		"moduleResolution": "node",
+		"allowJs": true,
+		"noEmit": true,
+		"strict": true,
+		"isolatedModules": true,
+		"esModuleInterop": true,
+		"jsx": "react",
+		"rootDir": "./src",
+		"baseUrl": "./src",
+		"outDir": "./lib-tsc",
+		"removeComments": true,
+		"downlevelIteration": true,
+		"declaration": true,
+		"declarationDir": "./src/types",
+		"declarationMap": true,
+		"typeRoots": [
+			"./src/types"
+		]
+	},
+	"include": [
+		"src/**/*"
+	],
+	"exclude": [
+		"node_modules",
+		"src/**/*.test.js"
+	]
+}

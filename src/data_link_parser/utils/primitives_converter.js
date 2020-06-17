@@ -1,12 +1,14 @@
+import { hasOwnProperty } from '../../utils/utils';
+
 /**
  * Converter's rules
  * @type {Object}
  */
 const types = {
-    'null': null,
-    'false': false,
-    'true': true
-}
+    null: null,
+    false: false,
+    true: true,
+};
 /**
  * Converts a string with "primitive" value such as
  * "true", "false", "null"
@@ -16,7 +18,9 @@ const types = {
  * @returns {*}
  */
 const primitivesConverter = (str) => {
-    return (typeof str === 'string' && types.hasOwnProperty(str)) ? types[str] : str
-}
+    return typeof str === 'string' && hasOwnProperty(types, str)
+        ? types[str]
+        : str;
+};
 
-export default primitivesConverter
+export default primitivesConverter;
