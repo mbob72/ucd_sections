@@ -6,7 +6,7 @@
   "types": "./types/types.d.ts",
   "scripts": {
     "build": "webpack --mode production --env.production --progress",
-    "build:tsc": "tsc --project ./tsconfig.json",
+    "build:tsc": "tsc --build --verbose",
     "lint": "eslint './src/**/*.{ts,tsx,js,jsx}'",
     "lint:fix": "eslint './src/**/*.{ts,tsx,js,jsx}' --fix"
   },

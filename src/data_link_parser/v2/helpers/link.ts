@@ -47,35 +47,25 @@ const readLinkPart = function* (params: DataLinkParserInterfaces.v2.Params, data
     for (current of dataLink) {
         switch (current[1]) {
             case '<': // index part
-                if (current[0] !== '/')
-                    throw new DataParserError(
-                        DataParserError.ERRORS.INDEX_PART
-                    );
+                if (current[0] !== '/') throw new DataParserError(DataParserError.ERRORS.INDEX_PART, data, dataLink);
                 return readIndexName(params, data);
             case ':': // token part
-                part = readToken(params, data);
-                break;
+                return readToken(params, data);
             case '$': // function part
             case '(': // expression part
-                if (current[0] !== '/' && current[0] !== '@')
-                    throw new DataParserError(DataParserError.ERRORS.LINK, data, dataLink);
+                if (current[0] !== '/' && current[0] !== '@') throw new DataParserError(DataParserError.ERRORS.LINK, data, dataLink);
                 part = yield* indexParser({ ...params, data });
-                if (typeof part !== 'string')
-                    throw new DataParserError(DataParserError.ERRORS.LINK, data, dataLink);
+                if (typeof part !== 'string') throw new DataParserError(DataParserError.ERRORS.LINK, data, dataLink);
                 break;
             case '\\': // escaped symbol
-                if (typeof part !== 'string')
-                    throw new DataParserError(DataParserError.ERRORS.LINK, data, dataLink);
-                if (current[2] === ' ')
-                    throw new DataParserError(DataParserError.ERRORS.LINK, data, dataLink);
+                if (typeof part !== 'string') throw new DataParserError(DataParserError.ERRORS.LINK, data, dataLink);
+                if (current[2] === ' ') throw new DataParserError(DataParserError.ERRORS.LINK, data, dataLink);
                 part += current[2];
                 dataLink.getNextValue();
                 break;
             default:
-                if (!inAllowedSymbols(current[1]))
-                    throw new DataParserError(DataParserError.ERRORS.LINK, data, dataLink);
-                if (typeof part !== 'string')
-                    throw new DataParserError(DataParserError.ERRORS.LINK, data, dataLink);
+                if (!inAllowedSymbols(current[1])) throw new DataParserError(DataParserError.ERRORS.LINK, data, dataLink);
+                if (typeof part !== 'string') throw new DataParserError(DataParserError.ERRORS.LINK, data, dataLink);
                 part += current[1];
         }
         current = dataLink.getCurrentValue();
@@ -87,13 +77,10 @@ const readLinkPart = function* (params: DataLinkParserInterfaces.v2.Params, data
             break;
         }
     }
-    if (typeof part !== 'string')
-        throw new DataParserError(DataParserError.ERRORS.LINK);
+    if (typeof part !== 'string') throw new DataParserError(DataParserError.ERRORS.LINK);
     if (!isObject(data) && !Array.isArray(data)) return defaultValue; // todo: ??
-    if (part && /^\d+$/.test(part) && Array.isArray(data))
-        return data[Number(part)] || defaultValue;
-    if (part && isObject(data))
-        return typeof data[part] === 'undefined' ? defaultValue : data[part];
+    if (part && /^\d+$/.test(part) && Array.isArray(data)) return data[Number(part)] || defaultValue;
+    if (part && isObject(data)) return typeof data[part] === 'undefined' ? defaultValue : data[part];
     return defaultValue;
 };
 /**
@@ -124,10 +111,9 @@ const readToken = (params: DataLinkParserInterfaces.v2.Params, data: Record<stri
             break;
     }
     // the passed object of tokens is sometimes provided by the qs.parse method that created it with a null prototype.
-    const key =
-        token && Object.prototype.hasOwnProperty.call(tokens, token)
-            ? tokens[token]
-            : 0;
+    const key = token && Object.prototype.hasOwnProperty.call(tokens, token)
+        ? tokens[token]
+        : 0;
     if (!isObject(data) && !Array.isArray(data)) {
         console.warn('Error: The data should be an object or an array!', data, dataLink.toString());
         return defaultValue;
@@ -161,10 +147,8 @@ const readIndexName = (params: DataLinkParserInterfaces.v2.Params, data: Record<
         if (current[2] === '>') break;
     }
     current = dataLink.getNextValue();
-    if (current[2] === '/')
-        throw new DataParserError(DataParserError.ERRORS.INDEX_LAST, data, dataLink);
-    if (inAllowedSymbols(current[2]))
-        throw new DataParserError(DataParserError.ERRORS.INDEX_PART, data, dataLink);
+    if (current[2] === '/') throw new DataParserError(DataParserError.ERRORS.INDEX_LAST, data, dataLink);
+    if (inAllowedSymbols(current[2])) throw new DataParserError(DataParserError.ERRORS.INDEX_PART, data, dataLink);
     for (const i in data) data[i][indexName] = i;
     return data;
 };

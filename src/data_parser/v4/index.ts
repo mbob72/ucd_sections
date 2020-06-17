@@ -31,9 +31,10 @@ const DATA_OBJECT_ID = Symbol.for('_objectId_');
 const objectIdGenerator = new IncrementGenerator();
 const templateIndexNames: Array<string> = [];
 
+// warning: This dataParser is a schema preprocessor that prepares schema and data for processing in the sections/v4 only.
+
 /**
  * Entry point of the dataParser.
- * Warning! This dataParser is a schema preprocessor that prepares schema and data for processing only in the sections/v4.
  */
 const dataParser = (params: DataParserV4.ParserParamsEntry): { schema: Record<string, any>, context: Record<string | symbol, any> } => {
     params.renderFunctions =
@@ -475,6 +476,7 @@ const stringParser = (params: DataParserV4.ParserParamsString): any => {
             const value = syncDataParser(<DataParserInterfaces.v5.EntryParams>{
                 schema: link,
                 data,
+                rootData,
                 tokens,
                 functions: renderFunctions,
             });
@@ -513,6 +515,7 @@ const getNewParts = (parts: Array<string>, tokens: Record<string, string | numbe
     const newParts: Array<string> = [];
     parts.reduce(
         (acc, part: string | number) => {
+            if (!acc.data) return acc;
             if ((<string>part).startsWith(':')) {
                 const token = (<string>part).substring(1);
                 part = tokens[token];

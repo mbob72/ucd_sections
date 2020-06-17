@@ -4,7 +4,7 @@ import { isEmpty, isError, hasOwnProperty } from '../../../utils';
 import BreakPromiseChainError from '../errors/break_promise_chain_error';
 import { deepCopy } from '../../../utils/deep_copy';
 import { isObject } from '../../../data_link_parser/utils';
-import { asyncDataParser, MODE } from '../../../data_parser/v5';
+import { asyncDataParser } from '../../../data_parser/v5';
 import { runAsyncGenerator } from '../../../data_parser/utils';
 import { awaitAll } from '../utils';
 import { DataContext, SchemaCallbackCollection, SectionInterfaces, ComputationsInterfaces, DataParserInterfaces, SchemaCallbackList } from 'types/types';
@@ -13,7 +13,6 @@ import CI = ComputationsInterfaces
 
 /**
  * This object contains promises that are related with forms according the _formId_.
- * @type {{}}
  */
 const formPromises: Record<string, CI.FormPromiseData> = {};
 
@@ -241,7 +240,7 @@ const compute = (
                 reject(new Error('Returned object must contain "value" and "dataLink" properties.'));
             } else resolve(val);
         };
-        asyncDataParser(<DataParserInterfaces.v5.EntryParams>{ schema: act, functions: computations, data: context, rootData: context, mode: MODE.USER_DEEP, defaultData: null, tokens: {} })
+        asyncDataParser(<DataParserInterfaces.v5.EntryParams>{ schema: act, functions: computations, data: context, rootData: context, defaultData: null, tokens: {} })
             .then((act) => {
                 if (typeof act === 'function') {
                     const res = act(value, { context, schema, currentSchemaObject, match, location, computations, updateState });
@@ -268,7 +267,7 @@ const compute = (
 const writeErrors = (error: Error, schema: Record<string, any>, context: DataContext): void => {
     const { _objectId_ } = schema;
     const serviceKey = Symbol.for(_objectId_);
-    const serviceObject = context ? context[serviceKey] : {};
+    const serviceObject = context ? context[serviceKey] ?? {} : {};
     if (isError(error) && context) {
         context[serviceKey] = { ...serviceObject, errors: [ error.message ] };
         return;
@@ -284,7 +283,7 @@ const writeErrors = (error: Error, schema: Record<string, any>, context: DataCon
 const clearErrors = (schema: Record<string, any>, context: DataContext): void => {
     const { _objectId_ } = schema;
     const serviceKey = Symbol.for(_objectId_);
-    const serviceObject = context ? context[serviceKey] : {};
+    const serviceObject = context ? context[serviceKey] ?? {} : {};
     if ('errors' in serviceObject) delete serviceObject.errors;
     if (context) context[serviceKey] = { ...serviceObject };
 };

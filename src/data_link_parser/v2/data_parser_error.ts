@@ -29,29 +29,27 @@ class DataParserError extends Error {
 
     public message: string;
 
-    public fullMessage: string;
-
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     constructor(message: string, data?: any, dataLink?: DataLink) {
         super(message);
+        Object.setPrototypeOf(this, DataParserError.prototype);
         this.message = message || 'DataParserError';
         this.data = data;
-        this.fullMessage = '';
         if (dataLink) this.setFullMessage(dataLink);
-        Object.setPrototypeOf(this, DataParserError.prototype);
     }
 
     setFullMessage(dataLink: DataLink): void {
         const info = dataLink.getCursorPositionInfo();
-        this.fullMessage =
+        let fullMessage =
             this.message +
             ', dataLink: "' +
             info +
             '" at position ' +
             dataLink.getCurrentIndex();
         if (dataLink.isEnd()) {
-            this.fullMessage += ' (out of the string)';
+            fullMessage += ' (out of the string)';
         }
+        this.message = fullMessage;
     }
 }
 

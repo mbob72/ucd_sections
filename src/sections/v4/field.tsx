@@ -9,7 +9,6 @@ import {
 
 import { isEmpty } from '../../utils';
 import { isDataLink } from '../../data_link_parser/utils';
-import getDataLink from '../../data_parser/utils/data_link_cache';
 import { RouteComponentProps } from 'react-router';
 import { syncDataParser } from '../../data_parser/v5';
 import { SectionInterfaces, DataContext, SchemaCallbackList, TokenParams, DataParserInterfaces } from 'types/types';
@@ -146,10 +145,9 @@ export const FieldEntry: React.ComponentClass<FieldV4.EntryPropsIn> = compose<Fi
                     _type_ = '';
                 }
             }
-            const Comp =
-        _type_ && _type_ in fieldComponents
-            ? fieldComponents[_type_]
-            : fieldComponents['DefaultField'];
+            const Comp = _type_ && _type_ in fieldComponents
+                ? fieldComponents[_type_]
+                : fieldComponents['DefaultField'];
 
             if (!Comp)
                 throw new Error('[error] SectionField: DefaultField must be defined.');

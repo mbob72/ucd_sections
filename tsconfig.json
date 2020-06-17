@@ -14,11 +14,10 @@
 		"rootDir": "./src",
 		"baseUrl": "./src",
 		"outDir": "./lib-tsc",
-		"resolveJsonModule": true,
 		"removeComments": true,
 		"downlevelIteration": true,
 		"declaration": true,
-		"declarationDir": "./lib",
+		"declarationDir": "./src/types",
 		"declarationMap": true,
 		"typeRoots": [
 			"./src/types"

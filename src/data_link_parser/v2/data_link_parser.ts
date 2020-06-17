@@ -55,6 +55,7 @@ const dataLinkParser = function* (params: DLPv2.Params): DLPv2.DataLinkParserGen
         }
     } catch (Err) {
         console.error(Err);
+        if (Err instanceof DataParserError) console.warn('[data]', Err.data);
         throw Err;
     }
 
