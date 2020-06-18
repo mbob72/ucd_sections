@@ -11,7 +11,7 @@ import { isEmpty } from '../../utils';
 import { isDataLink } from '../../data_link_parser/utils';
 import { RouteComponentProps } from 'react-router';
 import { syncDataParser } from '../../data_parser/v5';
-import { SectionInterfaces, DataContext, SchemaCallbackList, TokenParams, DataParserInterfaces } from '../../../types/types';
+import { SectionInterfaces, DataContext, TokenParams, DataParserInterfaces, ComputationsInterfaces } from '../../../types/types';
 import FieldV4 = SectionInterfaces.v4.Field;
 
 const EVENTS = {
@@ -25,8 +25,8 @@ const getSetStateParams = (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     value: any,
     schema: FieldV4.ParsedSchema,
-    actions: SchemaCallbackList,
-    after: Array<string>,
+    actions: ComputationsInterfaces.ComputationsList,
+    after: ComputationsInterfaces.ComputationsList,
     context: DataContext,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     match: any, // todo: should be clarified...
@@ -109,14 +109,8 @@ export const FieldEntry: React.ComponentClass<FieldV4.EntryPropsIn> = compose<Fi
                 _value_ = '',
                 _visible_ = true,
                 _computations_: {
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    _initial_: initial = [], // todo: not implemented.
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    _before_: before = [], // todo: not implemented.
                     _handlers_ = {},
                     _after_: after = [],
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    _unmount_: unmount = [], // todo: not implemented.
                 } = {},
             } = parsedSchema ?? {};
             if (_objectId_ && !Number.isInteger(_objectId_))

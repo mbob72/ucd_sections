@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// TODO: requires paths fix
 import { syncDataParser, asyncDataParser, genDataParser } from './index';
 import { DataParserError } from '../../data_link_parser/v2/data_parser_error';
 import jest from 'jest';

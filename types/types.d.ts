@@ -60,8 +60,8 @@ export namespace SectionInterfaces {
         export interface UpdateStateCallbackParam extends RouteComponentProps {
             value: ComputationsInterfaces.ComputationValue,
             context: DataContext,
-            actions: SchemaCallbackList,
-            after: SchemaCallbackList,
+            actions: ComputationsInterfaces.ComputationsList,
+            after: ComputationsInterfaces.ComputationsList,
             currentSchemaObject: Record<string, any>,
             tokenParams: TokenParams
         }
@@ -192,7 +192,14 @@ export namespace SectionInterfaces {
                 _type_?: string,
                 _visible_?: string | boolean,
                 _value_?: string,
-                _computations_?: SchemaInterfaces.Computations
+                _computations_?: {
+                    _after_?: string | ComputationsInterfaces.ComputationsList,
+                    _handlers_?: {
+                        _onClick_?: string | ComputationsInterfaces.ComputationsList,
+                        _onBlur_?: string | ComputationsInterfaces.ComputationsList,
+                        _onChange_?: string | ComputationsInterfaces.ComputationsList
+                    }
+                }
             }
         }
     }
@@ -216,6 +223,9 @@ export namespace ComputationsInterfaces {
     export interface MixedComputation {
         (value: ComputationValue, environment: ComputationEnvironment): MixedComputationResult | never;
     }
+
+    export type ComputationItem = string | Record<string, any> | MixedComputation;
+    export type ComputationsList = Array<ComputationItem>
     
     export interface SchemaCallbackSimple {
         (...args: Array<any>): Primitives | never;
@@ -241,7 +251,7 @@ export namespace ComputationsInterfaces {
     }
 
     export interface AfterActionsData {
-        actions: SchemaCallbackList,
+        actions: ComputationsList,
         value: ComputationsInterfaces.ComputationValue,
         currentSchemaObject: Record<string, any>
     }

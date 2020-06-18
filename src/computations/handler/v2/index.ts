@@ -7,7 +7,7 @@ import { isObject } from '../../../data_link_parser/utils';
 import { asyncDataParser } from '../../../data_parser/v5';
 import { runAsyncGenerator } from '../../../data_parser/utils';
 import { awaitAll } from '../utils';
-import { DataContext, SchemaCallbackCollection, SectionInterfaces, ComputationsInterfaces, DataParserInterfaces, SchemaCallbackList } from '../../../../types/types';
+import { DataContext, SchemaCallbackCollection, SectionInterfaces, ComputationsInterfaces, DataParserInterfaces } from '../../../../types/types';
 import SectionV4 = SectionInterfaces.v4;
 import CI = ComputationsInterfaces
 
@@ -131,7 +131,7 @@ export const getHandler = ({ schema, computations, updateState }: { schema: Reco
  */
 function run (
     controlStatus: boolean,
-    actionsList: SchemaCallbackList,
+    actionsList: CI.ComputationsList,
     value: CI.ComputationValue,
     currentSchemaObject: Record<string, any>,
     context: DataContext,
@@ -188,7 +188,7 @@ function run (
  * Iterates the passed actions list.
  */
 function* actionsIterator (
-    actionsList: SchemaCallbackList,
+    actionsList: CI.ComputationsList,
     value: CI.ComputationValue,
     currentSchemaObject: Record<string, any>,
     context: DataContext,
@@ -200,7 +200,7 @@ function* actionsIterator (
 ): Generator<Promise<CI.ComputationValue>, CI.ComputationValue | undefined | void | never, CI.ComputationValue> {
     try {
         for (const act of actionsList) {
-            value = yield compute(<CI.SchemaCallbackForComputations | string | Record<string, any>>act, value, currentSchemaObject, context, schema, computations, match, location, updateState);
+            value = yield compute(<CI.ComputationItem>act, value, currentSchemaObject, context, schema, computations, match, location, updateState);
         }
         return value;
     } catch (e) {
@@ -219,7 +219,7 @@ function* actionsIterator (
  * In this function, we register a reject function to take the possibility to break the current promise chain.
  */
 const compute = (
-    act: CI.SchemaCallbackForComputations | string | Record<string, any>,
+    act: CI.ComputationItem,
     value: CI.ComputationValue,
     currentSchemaObject: Record<string, any>,
     context: DataContext,
@@ -240,6 +240,7 @@ const compute = (
                 reject(new Error('Returned object must contain "value" and "dataLink" properties.'));
             } else resolve(val);
         };
+        // todo: The passed act param might be a function. This code may process only a string or an object (from schema). May be it is not necessary.
         asyncDataParser(<DataParserInterfaces.v5.EntryParams>{ schema: act, functions: computations, data: context, rootData: context, defaultData: null, tokens: {} })
             .then((act) => {
                 if (typeof act === 'function') {
