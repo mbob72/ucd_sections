@@ -6,13 +6,9 @@ const runAsyncGenerator = (iterator: Iterator<any, any, any>, resolve: (value: a
     const next = (v?: any): void => {
         try {
             const { value, done } = iterator.next(v);
-            if (done) {
-                if (value instanceof Promise) value.then(resolve, reject);
-                else resolve(value);
-            } else {
-                if (value instanceof Promise) value.then(next, reject);
-                else next(value);
-            }
+            const p = Promise.resolve(value);
+            if (done) p.then(resolve, reject);
+            else p.then(next, reject);
         } catch (e) {
             reject(e);
         }

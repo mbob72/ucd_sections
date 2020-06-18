@@ -230,7 +230,7 @@ const compute = (
     updateState?: any
 ): Promise<CI.ComputationValue> => {
     return new Promise((resolve, reject) => {
-        const finalResolve = (val) => {
+        const finalResolve = (val: CI.ComputationValue) => {
             if (!isObject(val)) {
                 reject(new Error('Computation must return an object.'));
                 return;
@@ -243,19 +243,14 @@ const compute = (
         asyncDataParser(<DataParserInterfaces.v5.EntryParams>{ schema: act, functions: computations, data: context, rootData: context, defaultData: null, tokens: {} })
             .then((act) => {
                 if (typeof act === 'function') {
-                    const res = act(value, { context, schema, currentSchemaObject, match, location, computations, updateState });
-                    if (act.isGenerator()) {
-                        runAsyncGenerator(res, finalResolve, reject);
-                    } else if (res instanceof Promise) {
-                        res.then(finalResolve, reject);
-                    } else {
-                        finalResolve(res);
-                    }
-                } else if (act instanceof Promise) {
-                    act.then(finalResolve, reject);
-                } else {
-                    finalResolve(act);
-                }
+                    Promise
+                        .resolve(act(value, { context, schema, currentSchemaObject, match, location, computations, updateState }))
+                        .then((res) => {
+                            if (act.isGenerator()) runAsyncGenerator(res, finalResolve, reject);
+                            else finalResolve(res);
+                        })
+                        .catch(reject);
+                } else finalResolve(act);
             })
             .catch(reject);
     });
