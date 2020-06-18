@@ -1,5 +1,5 @@
 import { DataParserError } from '../data_parser_error';
-import { DataLinkParserInterfaces } from 'types/types';
+import { DataLinkParserInterfaces } from '../../../../types/types';
 
 /**
  * The EscapedPlainParser reads a part of the data link string

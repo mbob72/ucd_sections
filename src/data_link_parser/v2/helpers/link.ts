@@ -3,7 +3,7 @@ import inAllowedSymbols from '../../utils/in_allowed_symbols';
 import { DataParserError } from '../data_parser_error';
 import indexParser from './index';
 import { isObject } from '../../utils';
-import { DataLinkParserInterfaces } from 'types/types';
+import { DataLinkParserInterfaces } from '../../../../types/types';
 
 const linkParser = function* (params: DataLinkParserInterfaces.v2.Params): Generator<any, any, any> {
     const { dataLink, data, rootData } = params;

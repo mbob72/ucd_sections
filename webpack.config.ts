@@ -1,20 +1,26 @@
 import path from "path";
 import { Configuration } from "webpack";
 import ForkTsCheckerWebpackPlugin from "fork-ts-checker-webpack-plugin";
+import DeclarationBundlerPlugin from 'declaration-bundler-webpack-plugin';
 
 const Config = (): Configuration => ({
     entry: './src/index.ts',
     output: {
         path: path.join(__dirname, './lib'),
         filename: 'index.js',
-        libraryTarget: 'umd'
+        libraryTarget: 'umd',
+        library: 'ucd_sections'
     },
     mode: 'production',
-    devtool: 'inline-source-map',
+    devtool: 'source-map',
     resolve: {
-        extensions: [ '.scss', '.sass', '.css', '.ts', '.tsx', '.js', '.jsx', '.d.ts' ]
+        extensions: [ '.ts', '.tsx', '.js', '.jsx' ]
     },
     plugins: [
+        new DeclarationBundlerPlugin({
+            moduleName:'ucd_sections',
+            out:'./index.d.ts',
+        }),
         new ForkTsCheckerWebpackPlugin({eslint: true})
     ],
     externals: {
@@ -32,7 +38,8 @@ const Config = (): Configuration => ({
                 loader: 'ts-loader',
                 options: {
                     configFile: path.join(__dirname, './tsconfig.json'),
-                    transpileOnly: true
+                    transpileOnly: true,
+                    compiler: 'typescript'
                 }
             },
             {

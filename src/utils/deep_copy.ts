@@ -1,5 +1,5 @@
 import { ProcessedObject, Primitives } from './types';
-import { ExtendedPropertyDescriptorMap } from 'types/types';
+import { ExtendedPropertyDescriptorMap } from '../../types/types';
 
 let emptyArrayFlag = false;
 type Value = ProcessedObject | Primitives | unknown

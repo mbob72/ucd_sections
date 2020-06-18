@@ -4,7 +4,7 @@ import dataLinkParser from '../../data_link_parser/v2';
 import getDataLink from '../utils/data_link_cache';
 import { isObject } from '../../data_link_parser/utils';
 import runAsyncGenerator from '../utils/run_async_generator';
-import { DataParserInterfaces, DataLinkParserInterfaces } from 'types/types';
+import { DataParserInterfaces, DataLinkParserInterfaces } from '../../../types/types';
 import DataParserV5 = DataParserInterfaces.v5;
 
 /**

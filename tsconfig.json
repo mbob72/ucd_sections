@@ -5,29 +5,31 @@
         "sourceMap": true,
         "noImplicitAny": false,
 		"moduleResolution": "node",
+		"module": "CommonJS",
 		"allowJs": true,
-		"noEmit": true,
 		"strict": true,
 		"isolatedModules": true,
 		"esModuleInterop": true,
 		"jsx": "react",
 		"rootDir": "./src",
 		"baseUrl": "./src",
-		"outDir": "./lib-tsc",
+		"outDir": "./lib",
 		"removeComments": true,
 		"downlevelIteration": true,
 		"declaration": true,
-		"declarationDir": "./src/types",
+		"declarationDir": "./lib",
 		"declarationMap": true,
 		"typeRoots": [
-			"./src/types"
+			"./types",
+			"./node_modules/@types"
 		]
 	},
 	"include": [
-		"src/**/*"
+		"src/**/*",
+		"./types"
 	],
 	"exclude": [
-		"node_modules",
-		"src/**/*.test.js"
+		"src/**/*.test.js",
+		"src/**/*.test.ts"
 	]
 }

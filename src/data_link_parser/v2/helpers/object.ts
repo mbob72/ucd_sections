@@ -3,7 +3,7 @@ import { DataParserError } from '../data_parser_error';
 import { valueParser, spaceSkipping } from './general';
 import inAllowedSymbols from '../../utils/in_allowed_symbols';
 import indexParser from './index';
-import { DataLinkParserInterfaces } from 'types/types';
+import { DataLinkParserInterfaces } from '../../../../types/types';
 const NOT_DEFINED = Symbol('NotDefined');
 /**
  * The KeyParser reads a key of the current object of the data link string.

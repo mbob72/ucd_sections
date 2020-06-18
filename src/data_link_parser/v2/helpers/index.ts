@@ -7,7 +7,7 @@ import objectParser from './object';
 import escapedPlainParser from './plain';
 import { DataParserError } from '../data_parser_error';
 import { DataLink } from '../';
-import { DataLinkParserInterfaces } from 'types/types';
+import { DataLinkParserInterfaces } from '../../../../types/types';
 
 export {
     arrayParser,

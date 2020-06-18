@@ -6,13 +6,18 @@
   "types": "./types/types.d.ts",
   "scripts": {
     "build": "webpack --mode production --env.production --progress",
-    "build:tsc": "tsc --build --verbose",
+    "build:tsc": "ts-node --project ./tsconfig.json",
     "lint": "eslint './src/**/*.{ts,tsx,js,jsx}'",
     "lint:fix": "eslint './src/**/*.{ts,tsx,js,jsx}' --fix"
   },
   "repository": {
     "type": "git",
     "url": "https://luxproject.luxoft.com/stash/scm/gpbesfl/ucd_sections.git"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "isolatedModules": true
   },
   "keywords": [],
   "author": "Vsevolod Chuprygin <VChuprygin@luxoft.com>",
@@ -24,10 +29,9 @@
     "uuid": "^3.3.3"
   },
   "devDependencies": {
-    "react": "^16.8.3",
-    "react-router": "^5.2.0",
     "@types/autoprefixer": "^9.7.2",
     "@types/classnames": "^2.2.10",
+    "@types/jest": "^26.0.0",
     "@types/node": "^14.0.9",
     "@types/react": "^16.9.35",
     "@types/react-dom": "^16.9.8",
@@ -41,6 +45,7 @@
     "autoprefixer": "^9.8.0",
     "cross-env": "^7.0.2",
     "css-loader": "^1.0.1",
+    "declaration-bundler-webpack-plugin": "^1.0.3",
     "enzyme": "^3.11.0",
     "eslint": "^7.1.0",
     "eslint-config-prettier": "^6.11.0",
@@ -54,11 +59,14 @@
     "postcss-loader": "^3.0.0",
     "postcss-preset-env": "^6.7.0",
     "prettier": "^2.0.5",
+    "react": "^16.8.3",
+    "react-router": "^5.2.0",
     "resolve-url-loader": "^3.1.1",
     "sass": "^1.26.5",
     "sass-loader": "^7.1.0",
     "source-map-loader": "^1.0.0",
     "style-loader": "^0.23.1",
+    "ts-jest": "^26.1.0",
     "ts-loader": "^7.0.5",
     "ts-node": "^8.10.2",
     "typescript": "^3.9.3",

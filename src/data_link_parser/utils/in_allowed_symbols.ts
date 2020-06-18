@@ -1,9 +1,7 @@
 /**
  * Checks that the symbol is from valid ranges.
- * @param x
- * @returns {boolean}
  */
-const inAllowedSymbols = (x) => {
+const inAllowedSymbols = (x: string): boolean => {
     // /[a-zA-Z0-9_]/
     const code = x.charCodeAt(0);
     return (

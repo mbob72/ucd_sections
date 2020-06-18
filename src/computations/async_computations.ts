@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import BreakPromiseChainError from './handler/errors/break_promise_chain_error';
-import { ComputationsInterfaces as CI } from 'types/types';
+import { ComputationsInterfaces as CI } from '../../types/types';
 
 /** For debugging. */
 export const log: CI.SchemaCallbackForComputations = (marker?: string, additional?: string): CI.SyncComputation => {

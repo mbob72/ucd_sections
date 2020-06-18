@@ -1,4 +1,4 @@
-import { DataLinkParserInterfaces } from 'types/types';
+import { DataLinkParserInterfaces } from '../../../../../types/types';
 
 const spaceSkipping = (params: DataLinkParserInterfaces.v2.Params): string => {
     const { dataLink } = params;

@@ -2,7 +2,7 @@
 import { DataParserError } from '../data_parser_error';
 import { valueParser } from './general';
 import spaceSkipping from './general/space_skipping';
-import { DataLinkParserInterfaces } from 'types/types';
+import { DataLinkParserInterfaces } from '../../../../types/types';
 
 /**
  * The ArrayParser reads a part of the data link string

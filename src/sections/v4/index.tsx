@@ -7,7 +7,7 @@ import { FieldEntry } from './field';
 import * as builtInSyncComputations from '../../computations/functions';
 // import * as experimental from '../../computations/experimental';
 import * as builtInAsyncComputations from '../../computations/async_computations';
-import { SectionInterfaces, DataContext } from 'types/types';
+import { SectionInterfaces, DataContext } from '../../../types/types';
 import SectionV4 = SectionInterfaces.v4.Section;
 import FieldV4 = SectionInterfaces.v4.Field;
 import qs from 'qs';

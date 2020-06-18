@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ComputationsInterfaces as CI } from 'types/types';
+import { ComputationsInterfaces as CI } from '../../types/types';
 
 /** truth if the passed values are strictly equal */
 export const isEqual: CI.SchemaCallbackSimple = (value: any, control: any): boolean => {

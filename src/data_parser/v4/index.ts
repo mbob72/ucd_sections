@@ -11,7 +11,7 @@ import * as renderFunctions from '../../computations/functions';
 import { syncDataParser } from '../v5';
 import IncrementGenerator from '../utils/increment_generator';
 import deepMerge from '../../utils/deep_merge';
-import { DataParserInterfaces, SchemaInterfaces } from 'types/types';
+import { DataParserInterfaces, SchemaInterfaces } from '../../../types/types';
 import DataParserV4 = DataParserInterfaces.v4.Preprocessor;
 import { ProcessedObject } from 'utils/types';
 

@@ -7,7 +7,7 @@ import { isObject } from '../../../data_link_parser/utils';
 import { asyncDataParser } from '../../../data_parser/v5';
 import { runAsyncGenerator } from '../../../data_parser/utils';
 import { awaitAll } from '../utils';
-import { DataContext, SchemaCallbackCollection, SectionInterfaces, ComputationsInterfaces, DataParserInterfaces, SchemaCallbackList } from 'types/types';
+import { DataContext, SchemaCallbackCollection, SectionInterfaces, ComputationsInterfaces, DataParserInterfaces, SchemaCallbackList } from '../../../../types/types';
 import SectionV4 = SectionInterfaces.v4;
 import CI = ComputationsInterfaces
 

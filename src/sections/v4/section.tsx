@@ -6,7 +6,7 @@ import { isDataLink } from '../../data_link_parser/utils';
 import { syncDataParser } from '../../data_parser/v5';
 import { RouteComponentProps } from 'react-router';
 
-import { SectionInterfaces, DataParserInterfaces } from '../../types/types';
+import { SectionInterfaces, DataParserInterfaces } from '../../../types/types';
 import SectionV4 = SectionInterfaces.v4.Section;
 
 const WrappedClientSectionComponent = ({
@@ -66,7 +66,7 @@ export const SectionEntry: React.ComponentClass<SectionV4.EntryPropsIn> = compos
                     _type_ = '';
                 }
             }
-            if (isDataLink(_visible_)) {
+            if (isDataLink(_visible_ as string)) {
                 _visible_ = syncDataParser({
                     schema: _visible_,
                     data: context,

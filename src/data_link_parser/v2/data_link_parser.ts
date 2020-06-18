@@ -1,7 +1,7 @@
 import indexParser from './helpers';
 import { DataParserError } from './data_parser_error';
 import { DataLink } from './index';
-import { DataLinkParserInterfaces } from 'types/types';
+import { DataLinkParserInterfaces } from '../../../types/types';
 import DLPv2 = DataLinkParserInterfaces.v2;
 /**
  * Returns a string if the main result is not empty,

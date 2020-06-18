@@ -11,7 +11,7 @@ import { isEmpty } from '../../utils';
 import { isDataLink } from '../../data_link_parser/utils';
 import { RouteComponentProps } from 'react-router';
 import { syncDataParser } from '../../data_parser/v5';
-import { SectionInterfaces, DataContext, SchemaCallbackList, TokenParams, DataParserInterfaces } from 'types/types';
+import { SectionInterfaces, DataContext, SchemaCallbackList, TokenParams, DataParserInterfaces } from '../../../types/types';
 import FieldV4 = SectionInterfaces.v4.Field;
 
 const EVENTS = {

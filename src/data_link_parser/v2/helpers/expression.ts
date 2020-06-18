@@ -3,7 +3,7 @@ import { DataParserError } from '../data_parser_error';
 import indexParser from './index';
 import spaceSkipping from './general/space_skipping';
 import { valueParser } from './general';
-import { DataLinkParserInterfaces } from 'types/types';
+import { DataLinkParserInterfaces } from '../../../../types/types';
 
 /**
  * The ExpressionParser reads a part of the data link string

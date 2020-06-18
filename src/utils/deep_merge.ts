@@ -1,5 +1,5 @@
 import { deepCopy } from './deep_copy';
-import { ExtendedPropertyDescriptorMap } from 'types/types';
+import { ExtendedPropertyDescriptorMap } from '../../types/types';
 import { ProcessedObject } from './types';
 
 const isObject = (value: unknown): boolean =>

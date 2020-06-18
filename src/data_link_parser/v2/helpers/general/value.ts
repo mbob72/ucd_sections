@@ -3,7 +3,7 @@ import { DataParserError } from '../../data_parser_error';
 import indexParser from '../index';
 import inAllowedSymbols from '../../../utils/in_allowed_symbols';
 import primitivesConverter from '../../../utils/primitives_converter';
-import { DataLinkParserInterfaces } from 'types/types';
+import { DataLinkParserInterfaces } from '../../../../../types/types';
 
 const setResult = (data: any, result?: string): any => {
     if (typeof result === 'undefined') {

@@ -2,7 +2,7 @@
 import { DataParserError } from '../data_parser_error';
 import inAllowedSymbols from '../../utils/in_allowed_symbols';
 import { expressionParser } from './index';
-import { DataLinkParserInterfaces } from 'types/types';
+import { DataLinkParserInterfaces } from '../../../../types/types';
 
 /**
  * The FunctionParser reads a part of the dataLink string
