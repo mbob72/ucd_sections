@@ -11,7 +11,6 @@
 		"isolatedModules": true,
 		"esModuleInterop": true,
 		"jsx": "react",
-		"rootDir": "./src",
 		"baseUrl": "./src",
 		"outDir": "./lib",
 		"removeComments": true,
@@ -25,11 +24,13 @@
 		]
 	},
 	"include": [
-		"src/**/*",
-		"./types"
+		"./src/**/*"
 	],
 	"exclude": [
+		"node_modules",
 		"src/**/*.test.js",
-		"src/**/*.test.ts"
+		"src/**/*.test.ts",
+		"lib/**/*",
+		"./.idea"
 	]
 }
