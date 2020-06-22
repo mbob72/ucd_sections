@@ -5,6 +5,7 @@
   "main": "./lib/index.js",
   "types": "./types/types.d.ts",
   "scripts": {
+    "postinstall": "npm run build",
     "build": "npm run build:tsc",
     "build:webpack": "webpack",
     "build:tsc": "tsc --project ./tsconfig.json",
@@ -27,9 +28,7 @@
     "classnames": "2.2.6",
     "query-string": "^6.12.1",
     "recompose": "^0.30.0",
-    "uuid": "^3.3.3"
-  },
-  "devDependencies": {
+    "uuid": "^3.3.3",
     "@types/autoprefixer": "^9.7.2",
     "@types/classnames": "^2.2.10",
     "@types/jest": "^26.0.0",
