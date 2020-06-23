@@ -272,7 +272,7 @@ export namespace DataParserInterfaces {
             rootData?: DataContext,
             renderFunctions: SchemaCallbackCollection,
             tokens?: TokenParams,
-            defaultData?: any
+            defaultValue?: any
         }
         export namespace Preprocessor {
             interface GeneralPreprocessorParamsInterface extends GeneralParamsInterface {
@@ -333,7 +333,7 @@ export namespace DataParserInterfaces {
             rootData: DataContext,
             functions: SchemaCallbackCollection,
             tokens: Record<string, string | number>,
-            defaultData: any,
+            defaultValue: any,
             mode: number
         }
 

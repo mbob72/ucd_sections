@@ -27,7 +27,7 @@ const MODE = {
 /**
  * Asynchronous data parser.
  */
-function asyncDataParser({ schema, data, rootData, defaultData, functions, tokens, mode = MODE.FULL_DEEP }: DataParserV5.EntryParams): Promise<any> {
+function asyncDataParser({ schema, data, rootData, defaultValue, functions, tokens, mode = MODE.FULL_DEEP }: DataParserV5.EntryParams): Promise<any> {
     return new Promise((resolve, reject) => {
         if (!rootData) rootData = data;
         const iterator = switcher({
@@ -37,7 +37,7 @@ function asyncDataParser({ schema, data, rootData, defaultData, functions, token
             functions,
             mode,
             tokens,
-            defaultData
+            defaultValue
         }, true);
         runAsyncGenerator(iterator, resolve, reject);
     });
@@ -46,7 +46,7 @@ function asyncDataParser({ schema, data, rootData, defaultData, functions, token
 /**
  * Synchronous data parser. Returns only final result of the iteration.
  */
-function syncDataParser({ schema, data, rootData, defaultData, functions, tokens, mode = MODE.FULL_DEEP }: DataParserV5.EntryParams): any {
+function syncDataParser({ schema, data, rootData, defaultValue, functions, tokens, mode = MODE.FULL_DEEP }: DataParserV5.EntryParams): any {
     if (!rootData) rootData = data;
     const generator = switcher({
         dataLink: schema,
@@ -55,7 +55,7 @@ function syncDataParser({ schema, data, rootData, defaultData, functions, tokens
         functions,
         mode,
         tokens,
-        defaultData
+        defaultValue
     }, true);
     let result: any;
     // eslint-disable-next-line no-constant-condition
@@ -69,7 +69,7 @@ function syncDataParser({ schema, data, rootData, defaultData, functions, tokens
 /**
  * Data parser as a generator, client may process each yielded value.
  */
-function* genDataParser({ schema, data, rootData, defaultData, functions, tokens, mode = MODE.FULL_DEEP }: DataParserV5.EntryParams): Generator<any, any, any> {
+function* genDataParser({ schema, data, rootData, defaultValue, functions, tokens, mode = MODE.FULL_DEEP }: DataParserV5.EntryParams): Generator<any, any, any> {
     if (!rootData) rootData = data;
     return yield* switcher({
         dataLink: schema,
@@ -78,7 +78,7 @@ function* genDataParser({ schema, data, rootData, defaultData, functions, tokens
         functions,
         mode,
         tokens,
-        defaultData
+        defaultValue
     }, true);
 }
 
@@ -87,7 +87,7 @@ function* switcher(params: DataParserV5.ParserParamsAny, entry = false): Generat
     // shallow or deep mode
     const modeCode = mode & 0b1100 || 0b1100;
     if (typeof dataLink === 'string' && dataLink) {
-        return yield* dataLinkParser(<DataLinkParserInterfaces.v2.Params>{ ...params, dataLink: getDataLink(dataLink), defaultValue: null });
+        return yield* dataLinkParser(<DataLinkParserInterfaces.v2.Params>{ ...params, dataLink: getDataLink(dataLink) });
     } else if (isObject(dataLink)) {
         if (!entry && modeCode === 0b1000) return dataLink;
         return yield* objectParser(<DataParserV5.ParserParamsObject>params);

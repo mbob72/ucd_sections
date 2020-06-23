@@ -10,16 +10,21 @@
     "build:webpack": "webpack",
     "build:tsc": "tsc --project ./tsconfig.json",
     "lint": "eslint './src/**/*.{ts,tsx,js,jsx}'",
-    "lint:fix": "eslint './src/**/*.{ts,tsx,js,jsx}' --fix"
+    "lint:fix": "eslint './src/**/*.{ts,tsx,js,jsx}' --fix",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
     "url": "https://luxproject.luxoft.com/stash/scm/gpbesfl/ucd_sections.git"
   },
   "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "node",
-    "isolatedModules": true
+    "preset": "ts-jest/presets/js-with-ts",
+    "globals": {
+      "ts-jest": {
+        "tsConfig": "./tsconfig.json",
+        "isolatedModules": true
+      }
+    }
   },
   "keywords": [],
   "author": "Vsevolod Chuprygin <VChuprygin@luxoft.com>",
