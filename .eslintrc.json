@@ -61,6 +61,7 @@
         "react/display-name": "off"
     },
     "env": {
+        "jest": true,
         "browser": true,
         "es6": true
     }
