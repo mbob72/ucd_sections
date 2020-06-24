@@ -791,7 +791,7 @@ describe('Timing tests', () => {
     it('object parser time testing', () => {
         const schema = '{a: c, b: d}';
         const { totalTime, averageTime } = timeMeasurement(data, schema);
-        expect(totalTime).toBeLessThan(150);
+        expect(totalTime).toBeLessThan(200);
     });
     it('should parse 10000 complex for less than 0.3sec', () => {
         const schema = '[{ b: [{ a  : $formatUppercase(@a)}, [@c]], a: [$formatUppercase(@b/c/d)] }]';
