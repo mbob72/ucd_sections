@@ -32,7 +32,17 @@ const schemaCallbacksCollection = {
         }
         return res;
     },
-    emptyParams: jest.fn(() => 'done')
+    emptyParams: jest.fn(() => 'done'),
+    asyncFunction: (thrw = false) => {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => thrw ? reject(new Error('Test error')) : resolve('async result'), 100)
+        })
+    },
+    asyncFunction2: (param) => {
+        return new Promise((resolve) => {
+            setTimeout(() => resolve(param), 100);
+        })
+    }
 };
 
 const data = {
@@ -762,21 +772,79 @@ const timeMeasurement = (data, schema) => {
     };
 };
 
+describe('Async data parser', () => {
+    it('Async data parser returns a promise', async () => {
+        const out = asyncDataParser({ schema: "string" })
+        expect(Promise.resolve(out)).toBe(out);
+        await expect(out).resolves.toEqual('string');
+    })
+
+    it('Parse and call async function in dataLink string #1', async () => {
+        const schema = '$asyncFunction()';
+        const out = asyncDataParser({ schema, functions: schemaCallbacksCollection });
+        await expect(out).resolves.toEqual('async result');
+    })
+
+    it('Parse and call async function in dataLink string #2', async () => {
+        const schema = '$asyncFunction(true)';
+        const out = asyncDataParser({ schema, functions: schemaCallbacksCollection });
+        await expect(out).rejects.toThrow('Test error');
+    })
+
+    it('Parse and call async function in dataLink string #3', async () => {
+        const schema = '$formatUppercase($asyncFunction())';
+        const out = asyncDataParser({ schema, functions: schemaCallbacksCollection });
+        await expect(out).resolves.toEqual('ASYNC RESULT');
+    })
+
+    it('Parse object with async functions in complex expressions', async () => {
+        const schema = {
+            test1: '$asyncFunction()',
+            test2: '$formatUppercase($asyncFunction())',
+            test3: '$asyncFunction2(@a)',
+            test4: '$asyncFunction2($asyncFunction())',
+            test5: '$formatUppercase($asyncFunction2($asyncFunction()))',
+            test6: '@b/$asyncFunction2(`c`)/d',
+            key: '@a'
+        };
+        const result = {
+            test1: 'async result',
+            test2: 'ASYNC RESULT',
+            test3: data.a,
+            test4: 'async result',
+            test5: 'ASYNC RESULT',
+            test6: data.b.c.d,
+            key: data.a
+        }
+        const out = asyncDataParser({ schema, data, functions: schemaCallbacksCollection });
+        await expect(out).resolves.toEqual(result)
+    })
+
+    it('Rejects parsing object with a failed async function', async () => {
+        const schema = {
+            success: '$asyncFunction()',
+            fail: '$formatUppercase($asyncFunction(true))'
+        };
+        const out = asyncDataParser({ schema, functions: schemaCallbacksCollection });
+        await expect(out).rejects.toThrow('Test error');
+    })
+})
+
 describe('Timing tests', () => {
     it('link parser time testing', () => {
         const schema = '@a';
         const { totalTime, averageTime } = timeMeasurement(data, schema);
-        expect(totalTime).toBeLessThan(150);
+        expect(totalTime).toBeLessThan(200);
     });
     it('plain parser time testing', () => {
         const schema = '`@a`';
         const { totalTime, averageTime } = timeMeasurement(data, schema);
-        expect(totalTime).toBeLessThan(150);
+        expect(totalTime).toBeLessThan(200);
     });
     it('expression parser time testing', () => {
         const schema = '(a)';
         const { totalTime, averageTime } = timeMeasurement(data, schema);
-        expect(totalTime).toBeLessThan(150);
+        expect(totalTime).toBeLessThan(200);
     });
     it('function parser time testing', () => {
         const schema = '$formatUppercase(a)';
