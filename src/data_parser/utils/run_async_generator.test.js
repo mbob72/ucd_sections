@@ -12,18 +12,18 @@ const syncGenerator = function* (thrw) {
 const asyncGenerator = function* (thrw) {
     const val = yield Promise.resolve(1);
     const val2 = yield new Promise((resolve, reject) => {
-        setTimeout(() => thrw ? resolve(2) : reject(new Error('Test error')), 100);
+        setTimeout(() => thrw ? reject(new Error('Test error')) : resolve(2), 100);
     });
     return val + val2;
 };
 
 
 describe('Testing the asynchronous generator processor', () => {
-    it('Call resolve at the end of computation #1: syncGenerator', () => {
+    it('Call resolve at the end of computation #1: syncGenerator', async () => {
         const resolveMock = jest.fn();
         const rejectMock = jest.fn();
         const syncGen = syncGenerator();
-        new Promise((resolve) => {
+        await new Promise((resolve) => {
             const res = (v) => {
                 resolve();
                 resolveMock(v);
@@ -33,18 +33,18 @@ describe('Testing the asynchronous generator processor', () => {
                 rejectMock(err);
             }
             runAsyncGenerator(syncGen, res, rej);
-        }).then(() => {
-            expect(resolveMock.mock.calls.length).toBe(1);
-            expect(resolveMock.mock.calls[0][0]).toBe(3)
-            expect(rejectMock.mock.calls.length).toBe(0);
-        })
+        });
+
+        expect(resolveMock.mock.calls.length).toBe(1);
+        expect(resolveMock.mock.calls[0][0]).toBe(3)
+        expect(rejectMock.mock.calls.length).toBe(0);
     })
 
-    it('Call resolve at the end of computation #2: asyncGenerator', () => {
+    it('Call resolve at the end of computation #2: asyncGenerator', async () => {
         const resolveMock = jest.fn();
         const rejectMock = jest.fn();
         const syncGen = asyncGenerator();
-        new Promise((resolve) => {
+        await new Promise((resolve) => {
             const res = (v) => {
                 resolve();
                 resolveMock(v);
@@ -54,18 +54,18 @@ describe('Testing the asynchronous generator processor', () => {
                 rejectMock(err);
             }
             runAsyncGenerator(syncGen, res, rej);
-        }).then(() => {
-            expect(resolveMock.mock.calls.length).toBe(1);
-            expect(resolveMock.mock.calls[0][0]).toBe(3)
-            expect(rejectMock.mock.calls.length).toBe(0);
-        })
+        });
+
+        expect(resolveMock.mock.calls.length).toBe(1);
+        expect(resolveMock.mock.calls[0][0]).toBe(3)
+        expect(rejectMock.mock.calls.length).toBe(0);
     })
 
-    it('Call reject on error #1: syncGenerator', () => {
+    it('Call reject on error #1: syncGenerator', async () => {
         const resolveMock = jest.fn();
         const rejectMock = jest.fn();
         const syncGen = syncGenerator(true);
-        new Promise((resolve) => {
+        await new Promise((resolve) => {
             const res = (v) => {
                 resolve();
                 resolveMock(v);
@@ -75,17 +75,17 @@ describe('Testing the asynchronous generator processor', () => {
                 rejectMock(err);
             }
             runAsyncGenerator(syncGen, res, rej);
-        }).then(() => {
-            expect(resolveMock.mock.calls.length).toBe(0);
-            expect(rejectMock.mock.calls.length).toBe(1);
-        })
+        });
+
+        expect(resolveMock.mock.calls.length).toBe(0);
+        expect(rejectMock.mock.calls.length).toBe(1);
     })
 
-    it('Call reject on error #2: asyncGenerator', () => {
+    it('Call reject on error #2: asyncGenerator', async () => {
         const resolveMock = jest.fn();
         const rejectMock = jest.fn();
         const syncGen = asyncGenerator(true);
-        new Promise((resolve) => {
+        await new Promise((resolve) => {
             const res = (v) => {
                 resolve();
                 resolveMock(v);
@@ -95,10 +95,10 @@ describe('Testing the asynchronous generator processor', () => {
                 rejectMock(err);
             }
             runAsyncGenerator(syncGen, res, rej);
-        }).then(() => {
-            expect(resolveMock.mock.calls.length).toBe(0);
-            expect(rejectMock.mock.calls.length).toBe(1);
-        })
+        });
+
+        expect(resolveMock.mock.calls.length).toBe(0);
+        expect(rejectMock.mock.calls.length).toBe(1);
     })
 
     it('Unexpected error during processing', () => {
