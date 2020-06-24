@@ -815,7 +815,7 @@ describe('Async data parser', () => {
             test5: 'ASYNC RESULT',
             test6: data.b.c.d,
             key: data.a
-        }
+        };
         const out = asyncDataParser({ schema, data, functions: schemaCallbacksCollection });
         await expect(out).resolves.toEqual(result)
     })
