@@ -3,7 +3,8 @@ const generator = function* (): Generator<number, never, unknown> {
     throw new Error('The safe number range is over!'); // Impossible?
 };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
-const incrementGenerator = function (this: any): void {
+const incrementGenerator = function (this: { gen: Generator<number, never, unknown> }): void {
+    if (!new.target) throw new Error('Must be called with new statement.');
     const gen = generator();
     this.gen = gen;
 };
