@@ -38,7 +38,7 @@ const functionParser = function* (params: DataLinkParserInterfaces.v2.Params): G
     }
     if (current[2] === '(') {
         dataLink.getNextValue();
-        return f(...yield* expressionParser(params, true));
+        return yield f(...yield* expressionParser(params, true));
     } else {
         return f;
     }
