@@ -13,8 +13,6 @@ class DataLink implements Iterable<[ string, string, string ]> {
 
     private current!: number;
 
-    private iteratorValue!: IteratorYieldResult<[ string, string, string ]> | IteratorReturnResult<[ string, string, string ]>;
-
     constructor(string: string) {
         if (typeof string !== 'string' || !string.trim())
             throw new Error('DataLink: The dataLink must be a not empty string!');
@@ -28,13 +26,13 @@ class DataLink implements Iterable<[ string, string, string ]> {
         return this.string.length;
     }
 
-    containsLinks (): boolean {
-        // Warning! Lookbehind checking is compatible only with Chrome browser version 64 and higher.
+    containsLinks (): boolean { // is used only for sections/v4
+        // warning: Lookbehind checking is compatible only with Chrome browser version 64 and higher.
         return /(?!<\\)@/.test(this.string);
     }
 
-    extractLinks (): RegExpMatchArray | null {
-        // Warning! Lookbehind checking is compatible only with Chrome browser version 64 and higher.
+    extractLinks (): RegExpMatchArray | null { // is used only for sections/v4
+        // warning: Lookbehind checking is compatible only with Chrome browser version 64 and higher.
         return this.string.match(/(?!<\\)(@[a-zA-Z0-9<>_\\:/.-]*)/g);
     }
 
@@ -45,19 +43,15 @@ class DataLink implements Iterable<[ string, string, string ]> {
         const current = this.getCurrentIndex();
         return (
             string.slice(0, current) +
-      '*>' +
-      currentSymbol +
-      '<*' +
-      (isEnd ? '' : string.slice(current + 1, string.length))
+            '*>' +
+            currentSymbol +
+            '<*' +
+            (isEnd ? '' : string.slice(current + 1, string.length))
         );
     }
 
     getNextValue(): [ string, string, string ] | never {
-        if (this.pause) {
-            this.pause = false;
-            return this.currentValue;
-        }
-        if (this.current > this.string.length) throw new Error('DataLink: Index out of boundary.');
+        if (this.isEnd()) throw new Error('DataLink: Index out of boundary.');
         this.current++;
         this.currentValue[0] = this.currentValue[1];
         this.currentValue[1] = this.currentValue[2];
@@ -72,11 +66,10 @@ class DataLink implements Iterable<[ string, string, string ]> {
             this.processingString[1],
             this.processingString[2],
         ];
-        this.iteratorValue = { value: this.currentValue, done: false };
     }
 
     getCurrentIndex(): number {
-        return this.current ? this.current - 1 : 0;
+        return this.current - 1;
     }
 
     getCurrentValue(): [ string, string, string ] {
@@ -100,9 +93,14 @@ class DataLink implements Iterable<[ string, string, string ]> {
     }
 
     next(): IteratorYieldResult<[ string, string, string ]> | IteratorReturnResult<[ string, string, string ]> | never {
-        if (this.current > this.string.length) throw new Error('DataLink: Index out of boundary.');
-        this.iteratorValue.value = this.getNextValue();
-        return this.iteratorValue;
+        if (this.pause) {
+            this.pause = false;
+            return { value: this.currentValue, done: false };
+        } else if (!this.isEnd()) {
+            return { value: this.getNextValue(), done: false };
+        } else {
+            return { value: [ '', '', '' ], done: true }; // stupid js iterable...
+        }
     }
 
     [Symbol.iterator](): DataLink {

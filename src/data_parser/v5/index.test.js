@@ -1,5 +1,6 @@
 import { syncDataParser, asyncDataParser, genDataParser } from './index';
 import { DataParserError } from '../../data_link_parser/v2/data_parser_error';
+import { dataLinkParser } from '../../data_link_parser/v2'
 
 const schemaCallbacksCollection = {
     formatUppercase: s => s.toUpperCase(),
@@ -189,12 +190,18 @@ describe('Schema V3', () => {
     });
 });
 
+describe('Some dataLinkParser tests', () => {
+    it('The dataLink must be passed', () => {
+        const fn = () => dataLinkParser({ dataLink: 'string' }).next();
+        expect(fn).toThrowError(DataParserError.ERRORS.DATA_LINK_TYPE);
+    })
+});
+
 describe('Primary functionality', () => {
     it('should return value if data link is not @link', () => {
         const schema = '1, qwerty';
         expect(syncDataParser({ schema, data }))
-            .toEqual(schema
-);
+            .toEqual(schema);
     });
 
     it('should get data by local key', () => {
@@ -559,6 +566,13 @@ describe('Objects', () => {
 
     it('should throw parse error if number of parenthesis mismatch 2', () => {
         const schema = '{ a';
+        const f = () => syncDataParser({ schema, data });
+        expect(f).toThrowError(DataParserError);
+        expect(f).toThrowError(DataParserError.ERRORS.NESTING);
+    });
+
+    it('should throw parse error if number of parenthesis mismatch 2', () => {
+        const schema = 'a }';
         const f = () => syncDataParser({ schema, data });
         expect(f).toThrowError(DataParserError);
         expect(f).toThrowError(DataParserError.ERRORS.NESTING);

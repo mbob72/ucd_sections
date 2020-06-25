@@ -22,11 +22,7 @@ const linkParser = function* (params: DataLinkParserInterfaces.v2.Params): Gener
             throw new DataParserError(DataParserError.ERRORS.LINK, data, dataLink);
         }
         current = dataLink.getCurrentValue();
-        if (
-            dataLink.isEnd() ||
-            current[2] !== '/' && !inAllowedSymbols(current[2])
-        )
-            break;
+        if (current[2] !== '/' && !inAllowedSymbols(current[2])) break;
     }
     return localData;
 };
@@ -70,7 +66,6 @@ const readLinkPart = function* (params: DataLinkParserInterfaces.v2.Params, data
         }
         current = dataLink.getCurrentValue();
         if (
-            dataLink.isEnd() ||
             current[2] === '/' ||
             current[2] !== '\\' && !inAllowedSymbols(current[2])
         ) {
@@ -103,12 +98,7 @@ const readToken = (params: DataLinkParserInterfaces.v2.Params, data: Record<stri
     dataLink.getNextValue();
     for (current of dataLink) {
         token += current[1];
-        if (
-            dataLink.isEnd() ||
-            current[2] !== '\\' &&
-                (current[2] === '/' || !inAllowedSymbols(current[2]))
-        )
-            break;
+        if (current[2] !== '\\' && (current[2] === '/' || !inAllowedSymbols(current[2]))) break;
     }
     // the passed object of tokens is sometimes provided by the qs.parse method that created it with a null prototype.
     const key = token && Object.prototype.hasOwnProperty.call(tokens, token)
