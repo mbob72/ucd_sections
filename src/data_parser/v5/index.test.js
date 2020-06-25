@@ -42,6 +42,9 @@ const schemaCallbacksCollection = {
         return new Promise((resolve) => {
             setTimeout(() => resolve(param), 100);
         })
+    },
+    throwError: () => {
+        throw new Error('Unknown error.');
     }
 };
 
@@ -757,21 +760,6 @@ describe('Freaking tests', () => {
     });
 });
 
-const timeMeasurement = (data, schema) => {
-    let totalTime = 0;
-    for (let i = 0; i <= 10000; i++) {
-        const localStart = performance.now();
-        syncDataParser({ schema, data, functions: schemaCallbacksCollection });
-        const localEnd = performance.now();
-        totalTime += localEnd - localStart;
-    }
-    const averageTime = totalTime / 10000;
-    return {
-        totalTime,
-        averageTime
-    };
-};
-
 describe('Async data parser', () => {
     it('Async data parser returns a promise', async () => {
         const out = asyncDataParser({ schema: "string" })
@@ -820,7 +808,7 @@ describe('Async data parser', () => {
         await expect(out).resolves.toEqual(result)
     })
 
-    it('Rejects parsing object with a failed async function', async () => {
+    it('Reject parsing object with a failed async function', async () => {
         const schema = {
             success: '$asyncFunction()',
             fail: '$formatUppercase($asyncFunction(true))'
@@ -828,7 +816,31 @@ describe('Async data parser', () => {
         const out = asyncDataParser({ schema, functions: schemaCallbacksCollection });
         await expect(out).rejects.toThrow('Test error');
     })
+
+    it('Reject parsing object if unknown error has been occured', async () => {
+        const schema = {
+            success: '$asyncFunction()',
+            fail: '$throwError()'
+        };
+        const out = asyncDataParser({ schema, functions: schemaCallbacksCollection });
+        await expect(out).rejects.toThrow('Unknown error');
+    })
 })
+
+const timeMeasurement = (data, schema) => {
+    let totalTime = 0;
+    for (let i = 0; i <= 10000; i++) {
+        const localStart = performance.now();
+        syncDataParser({ schema, data, functions: schemaCallbacksCollection });
+        const localEnd = performance.now();
+        totalTime += localEnd - localStart;
+    }
+    const averageTime = totalTime / 10000;
+    return {
+        totalTime,
+        averageTime
+    };
+};
 
 describe('Timing tests', () => {
     it('link parser time testing', () => {
@@ -864,6 +876,6 @@ describe('Timing tests', () => {
     it('should parse 10000 complex for less than 0.3sec', () => {
         const schema = '[{ b: [{ a  : $formatUppercase(@a)}, [@c]], a: [$formatUppercase(@b/c/d)] }]';
         const { totalTime, averageTime } = timeMeasurement(data, schema);
-        expect(totalTime).toBeLessThan(900); // todo: must be faster!!! It is so slow because work under generators.
+        expect(totalTime).toBeLessThan(900); // todo: must be faster!!! It is so slow because works under generators.
     });
 });
