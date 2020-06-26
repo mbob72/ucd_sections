@@ -6,7 +6,7 @@ describe('DataLink tests', () => {
         expect(fn).toThrow(Error);
     })
 
-    it('Not empty string must be passed', () => {
+    it('The passed string can not be empty', () => {
         const fn = () => new DataLink('');
         expect(fn).toThrow(Error);
     })
@@ -34,14 +34,19 @@ describe('DataLink tests', () => {
         expect(dataLink.extractLinks()).toEqual([ '@/link', '@link2', '@link3' ])
     })
 
-    it('DataLink must be iterable and valuable', () => {
+    it('Test DataLink interface', () => {
         const dataLink = new DataLink('ab');
         expect(dataLink).toEqual(expect.objectContaining({
             next: expect.any(Function),
             [Symbol.iterator]: expect.any(Function),
             valueOf: expect.any(Function),
             toString: expect.any(Function),
-            getCurrentIndex: expect.any(Function)
+            getCurrentIndex: expect.any(Function),
+            getCurrentValue: expect.any(Function),
+            getNextValue: expect.any(Function),
+            reset: expect.any(Function),
+            isStart: expect.any(Function),
+            isEnd: expect.any(Function)
         }))
         expect(dataLink[Symbol.iterator]()).toBe(dataLink);
         expect(dataLink.next()).toEqual(expect.objectContaining({ value: expect.anything(), done: expect.any(Boolean) }))
@@ -52,6 +57,13 @@ describe('DataLink tests', () => {
         expect(dataLink.getCurrentIndex()).toEqual(expect.any(Number));
     })
 
+    it('Test getting the next value', () => {
+        const dataLink = new DataLink('1234');
+        expect(dataLink.getCurrentValue()).toEqual([ DataLink.START, '1', '2' ])
+        expect(dataLink.getNextValue()).toEqual([ '1', '2', '3' ])
+        expect(dataLink.getCurrentValue()).toEqual([ '1', '2', '3' ])
+    })
+
     it('Test isStart and isEnd utilities', () => {
         const dataLink = new DataLink('a');
         expect(dataLink.isStart()).toBeTruthy();
@@ -60,7 +72,7 @@ describe('DataLink tests', () => {
         const dataLink2 = new DataLink('abcd');
         expect(dataLink2.isStart()).toBeTruthy();
         expect(dataLink2.isEnd()).toBeFalsy();
-        for(const current of dataLink2) {};
+        for(const {} of dataLink2) {};
         expect(dataLink2.isStart()).toBeFalsy();
         expect(dataLink2.isEnd()).toBeTruthy();
     })
@@ -70,5 +82,17 @@ describe('DataLink tests', () => {
         for (const current of dataLink) {};
         const fn = () => dataLink.getNextValue();
         expect(fn).toThrow(Error);
+    })
+
+    it('Test resetting', () => {
+        const dataLink = new DataLink('1234');
+        expect(dataLink.getCurrentValue()).toEqual([ DataLink.START, '1', '2' ]);
+        expect(dataLink.getCurrentIndex()).toEqual(0);
+        for (const {} of dataLink) {}
+        expect(dataLink.getCurrentValue()).toEqual([ '3', '4', DataLink.END ]);
+        expect(dataLink.getCurrentIndex()).toEqual(3);
+        dataLink.reset();
+        expect(dataLink.getCurrentValue()).toEqual([ DataLink.START, '1', '2' ]);
+        expect(dataLink.getCurrentIndex()).toEqual(0);
     })
 });

@@ -96,11 +96,9 @@ class DataLink implements Iterable<[ string, string, string ]> {
         if (this.pause) {
             this.pause = false;
             return { value: this.currentValue, done: false };
-        } else if (!this.isEnd()) {
+        } else if (!this.isEnd())
             return { value: this.getNextValue(), done: false };
-        } else {
-            return { value: [ '', '', '' ], done: true }; // stupid js iterable...
-        }
+        return { value: [ '', '', '' ], done: true }; // stupid js iterable...
     }
 
     [Symbol.iterator](): DataLink {

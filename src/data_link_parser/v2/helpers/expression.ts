@@ -83,8 +83,6 @@ const simpleExpression = function* (params: DataLinkParserInterfaces.v2.Params):
     }
     dataLink.getNextValue();
     for (current of dataLink) {
-        if (dataLink.isEnd())
-            throw new DataParserError(DataParserError.ERRORS.NESTING, data, dataLink);
         switch (current[1]) {
             case '@': // link part
             case '$': // function part
@@ -100,12 +98,14 @@ const simpleExpression = function* (params: DataLinkParserInterfaces.v2.Params):
             case '\\':
                 result += current[2];
                 current = dataLink.getNextValue();
+                if (dataLink.isEnd())
+                    throw new DataParserError(DataParserError.ERRORS.NESTING, data, dataLink);
                 break;
             case ' ':
                 // eslint-disable-next-line no-case-declarations
                 let spaces = ' ';
                 if (current[2] === ' ') {
-                    spaces += spaceSkipping(params);
+                    spaces = spaceSkipping(params);
                     current = dataLink.getCurrentValue();
                     if (dataLink.isEnd())
                         throw new DataParserError(DataParserError.ERRORS.NESTING, data, dataLink);
