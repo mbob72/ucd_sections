@@ -1,6 +1,6 @@
 // TODO: requires paths fix
-import { syncDataParser } from '../../data_parser/v5';
-import getDataLink from './data_link_cache';
+import { syncDataParser } from '../../v5';
+import getDataLink from '../data_link_cache';
 
 const data = { b: { c: { d: 'value' } } };
 

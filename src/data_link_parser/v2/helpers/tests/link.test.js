@@ -1,6 +1,6 @@
-import linkParser from './link';
-import DataLink from '../data_link';
-import { DataParserError } from '../data_parser_error';
+import linkParser from '../link';
+import DataLink from '../../data_link';
+import { DataParserError } from '../../data_parser_error';
 
 describe('Some additional tests for the linkParser', () => {
     it('Link parser returns an iterator', () => {

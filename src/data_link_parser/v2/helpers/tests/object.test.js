@@ -1,7 +1,7 @@
 
-import objectParser from './object';
-import DataLink from '../data_link';
-import { DataParserError } from '../data_parser_error';
+import objectParser from '../object';
+import DataLink from '../../data_link';
+import { DataParserError } from '../../data_parser_error';
 
 describe('Some additional tests for the objectParser', () => {
     it('Object parser returns an iterator', () => {

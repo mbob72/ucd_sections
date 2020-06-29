@@ -1,6 +1,6 @@
-import arrayParser from './array';
-import { DataParserError } from '../data_parser_error';
-import DataLink from '../data_link';
+import arrayParser from '../array';
+import { DataParserError } from '../../data_parser_error';
+import DataLink from '../../data_link';
 
 describe('Some additional tests for the arrayParser', () => {
      it('Returns an iterator', () => {

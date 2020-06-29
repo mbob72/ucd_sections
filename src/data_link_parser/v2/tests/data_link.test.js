@@ -1,4 +1,4 @@
-import DataLink from './data_link';
+import DataLink from '../data_link';
 
 describe('DataLink tests', () => {
     it('String must be passed', () => {

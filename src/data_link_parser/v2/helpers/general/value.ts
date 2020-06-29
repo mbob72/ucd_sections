@@ -40,7 +40,7 @@ const valueParser = function* (params: DataLinkParserInterfaces.v2.Params, array
                 throw new DataParserError(DataParserError.ERRORS.DEFAULT, data, dataLink);
             case '\\':
                 current = dataLink.getNextValue();
-                result = setResult(current[1]);
+                result = setResult(current[1], result);
                 if (dataLink.isEnd())
                     throw new DataParserError(DataParserError.ERRORS.NESTING);
                 break;
@@ -50,7 +50,7 @@ const valueParser = function* (params: DataLinkParserInterfaces.v2.Params, array
             case '[': // array part
             case '`': // escaped by the `` symbols string part
             case '(': // expression part
-                result = setResult(yield* indexParser(params));
+                result = setResult(yield* indexParser(params), result);
                 if (dataLink.isEnd())
                     throw new DataParserError(DataParserError.ERRORS.NESTING, data, dataLink);
                 current = dataLink.getCurrentValue();
@@ -66,7 +66,7 @@ const valueParser = function* (params: DataLinkParserInterfaces.v2.Params, array
                         throw new DataParserError(DataParserError.ERRORS.OBJECT_VALUE, data, dataLink);
                     }
                 }
-                result = (result || '') + setResult(current[1]);
+                result = setResult(current[1], result);
                 break;
         }
         switch (current[2]) {

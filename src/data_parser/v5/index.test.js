@@ -1,6 +1,7 @@
-import { syncDataParser, asyncDataParser, genDataParser } from './index';
+import { syncDataParser, asyncDataParser, genDataParser, MODE } from './index';
 import { DataParserError } from '../../data_link_parser/v2/data_parser_error';
 import { dataLinkParser } from '../../data_link_parser/v2'
+import runAsyncGenerator from '../utils/run_async_generator';
 
 const schemaCallbacksCollection = {
     formatUppercase: s => s.toUpperCase(),
@@ -190,13 +191,6 @@ describe('Schema V3', () => {
         const fn = () => syncDataParser({ schema: schema, data });
         expect(fn).toThrowError(Error);
     });
-});
-
-describe('Some dataLinkParser tests', () => {
-    it('The dataLink must be passed', () => {
-        const fn = () => dataLinkParser({ dataLink: 'string' }).next();
-        expect(fn).toThrowError(DataParserError.ERRORS.DATA_LINK_TYPE);
-    })
 });
 
 describe('Primary functionality', () => {
@@ -419,6 +413,12 @@ describe('Expressions', () => {
         expect(syncDataParser({ schema, data })).toEqual(`${data.a}    ${data.e}b`);
     });
 
+    it('should resolve complex value in expression', () => {
+        const schema = '( string\\$(@b/c/d)\\(\\) )';
+        expect(syncDataParser({ schema, data }))
+            .toEqual('string$d()')
+    })
+
     it('should resolve whitespace and comma in expressions', () => {
         const schema = '(@a, @e)b';
         expect(syncDataParser({ schema, data })).toEqual(`${data.a}, ${data.e}b`);
@@ -556,6 +556,12 @@ describe('Arrays', () => {
             .toEqual([ [ 'a', [ true ] ], [ 'a', null ] ]);
     });
 
+    it('should resolve complex value in array', () => {
+        const schema = '[ string\\$(@b/c/d)\\(\\) ]';
+        expect(syncDataParser({ schema, data }))
+            .toEqual([ 'string$d()' ])
+    })
+
     it('should convert array into renderFunction arguments', () => {
         const schema = '$formatPlus([@b/c/d, @f])';
         expect(syncDataParser({ schema, data, functions: schemaCallbacksCollection }))
@@ -639,6 +645,12 @@ describe('Objects', () => {
         const schema = '[ { a: @a }, { b: { c: { d: @b/c/d } } } ]';
         expect(syncDataParser({ schema, data })).toEqual([ { a: data.a }, { b: { c: { d: data.b.c.d } } } ]);
     });
+
+    it('should resolve complex value in object', () => {
+        const schema = '{ key: string\\$(@b/c/d)\\(\\) }';
+        expect(syncDataParser({ schema, data }))
+            .toEqual({ key: 'string$d()' })
+    })
 
     it('should throw parse error if number of parenthesis mismatch', () => {
         const schema = '{{ b: @c }';
@@ -968,6 +980,166 @@ describe('Async data parser', () => {
         await expect(out).rejects.toThrow('Unknown error');
     })
 })
+
+describe('Some additional tests', () => {
+    it('The dataLink must be passed', () => {
+        const fn = () => dataLinkParser({ dataLink: 'string' }).next();
+        expect(fn).toThrowError(DataParserError.ERRORS.DATA_LINK_TYPE);
+    })
+
+    it('Test the parsing mode', () => {
+        const schema = {
+            _coreField_: '@b/c/d',
+            userField: '@b/c/d',
+            _coreObject_: {
+                _coreField_: '@b/c/d',
+                userField: '@b/c/d'
+            },
+            userObject: {
+                _coreField_: '@b/c/d',
+                userField: '@b/c/d'
+            },
+            _coreArray_: [ '@b/c/d' ],
+            userArray: [ '@b/c/d' ]
+        }
+
+        const results = {
+            [MODE.FULL_DEEP]: {
+                _coreField_: 'd',
+                userField: 'd',
+                _coreObject_: {
+                    _coreField_: 'd',
+                    userField: 'd'
+                },
+                userObject: {
+                    _coreField_: 'd',
+                    userField: 'd'
+                },
+                _coreArray_: [ 'd' ],
+                userArray: [ 'd' ]
+            },
+            [MODE.FULL_SHALLOW]: {
+                _coreField_: 'd',
+                userField: 'd',
+                _coreObject_: {
+                    _coreField_: '@b/c/d',
+                    userField: '@b/c/d'
+                },
+                userObject: {
+                    _coreField_: '@b/c/d',
+                    userField: '@b/c/d'
+                },
+                _coreArray_: [ '@b/c/d' ],
+                userArray: [ '@b/c/d' ]
+            },
+            [MODE.USER_DEEP]: {
+                userField: 'd',
+                userObject: {
+                    userField: 'd'
+                },
+                userArray: [ 'd' ]
+            },
+            [MODE.USER_SHALLOW]: {
+                userField: 'd',
+                userObject: {
+                    _coreField_: '@b/c/d',
+                    userField: '@b/c/d'
+                },
+                userArray: [ '@b/c/d' ]
+            },
+            [MODE.CORE_DEEP]: {
+                _coreField_: 'd',
+                _coreObject_: {
+                    _coreField_: 'd'
+                },
+                _coreArray_: [ 'd' ]
+            },
+            [MODE.CORE_SHALLOW]: {
+                _coreField_: 'd',
+                _coreObject_: {
+                    _coreField_: '@b/c/d',
+                    userField: '@b/c/d'
+                },
+                _coreArray_: [ '@b/c/d' ]
+            }
+        };
+        expect(syncDataParser({ schema, data })).toEqual(results[MODE.FULL_DEEP]);
+        expect(syncDataParser({ schema, data, mode: MODE.FULL_DEEP })).toEqual(results[MODE.FULL_DEEP]);
+        expect(syncDataParser({ schema, data, mode: 'string' })).toEqual(results[MODE.FULL_DEEP]);
+        expect(syncDataParser({ schema, data, mode: {} })).toEqual(results[MODE.FULL_DEEP]);
+        expect(syncDataParser({ schema, data, mode: 0 })).toEqual(results[MODE.FULL_DEEP]);
+        expect(syncDataParser({ schema, data, mode: true })).toEqual(results[MODE.FULL_DEEP]);
+        expect(syncDataParser({ schema, data, mode: false })).toEqual(results[MODE.FULL_DEEP]);
+        expect(syncDataParser({ schema, data, mode: null })).toEqual(results[MODE.FULL_DEEP]);
+        expect(syncDataParser({ schema, data, mode: void 0 })).toEqual(results[MODE.FULL_DEEP]);
+        expect(syncDataParser({ schema, data, mode: MODE.FULL_SHALLOW })).toEqual(results[MODE.FULL_SHALLOW]);
+        expect(syncDataParser({ schema, data, mode: MODE.USER_DEEP })).toEqual(results[MODE.USER_DEEP]);
+        expect(syncDataParser({ schema, data, mode: MODE.USER_SHALLOW })).toEqual(results[MODE.USER_SHALLOW]);
+        expect(syncDataParser({ schema, data, mode: MODE.CORE_DEEP })).toEqual(results[MODE.CORE_DEEP]);
+        expect(syncDataParser({ schema, data, mode: MODE.CORE_SHALLOW })).toEqual(results[MODE.CORE_SHALLOW]);
+    })
+
+    it('Keys in object should be parsed', () => {
+        const schema = {
+            '@b/c/d': 'value'
+        };
+        const result = {
+            d: 'value'
+        };
+        expect(syncDataParser({ schema, data })).toEqual(result);
+    })
+
+    it('Parsed key in object is not a string', () => {
+        const schema = {
+            '$getObject()': 'value'
+        };
+        const fn = () => syncDataParser({ schema, data, functions: schemaCallbacksCollection });
+        expect(fn).toThrow(Error);
+    })
+
+    it('Get dataParser as generator', async () => {
+        const schema = {
+            key: '$getObject()'
+        };
+        const result = {
+            key: schemaCallbacksCollection.getObject()
+        }
+        const gDP = genDataParser({ schema, data, functions: schemaCallbacksCollection });
+        expect(gDP).toEqual(expect.objectContaining({
+            next: expect.any(Function),
+            [Symbol.iterator]: expect.any(Function)
+        }))
+        const out = await new Promise((resolve, reject) => {
+            runAsyncGenerator(gDP, resolve, reject); // there we should process the iterator.
+        })
+        expect(out).toEqual(result);
+    })
+
+    it('Root data automatically is equal to the data (if it is not passed)', async () => {
+        const schema = {
+            _dataLink_: '@b',
+            key: {
+                key: '@/b/c/d', // read from the rootData.
+                key2: '@c/d' // read from the "local" data (data from the _dataLink_ field)
+            }
+        };
+        const result = {
+            key: {
+                key: 'd',
+                key2: 'd'
+            }
+        };
+        expect(syncDataParser({ schema, data })).toEqual(result);
+
+        const outAsync = await asyncDataParser({ schema, data });
+        expect(outAsync).toEqual(result);
+
+        const outGenerator = await new Promise((resolve, reject) => {
+            runAsyncGenerator(genDataParser({ schema, data }), resolve, reject); // there we should process the iterator.
+        })
+        expect(outGenerator).toEqual(result);
+    })
+});
 
 const timeMeasurement = (data, schema) => {
     let totalTime = 0;

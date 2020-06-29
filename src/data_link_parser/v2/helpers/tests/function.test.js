@@ -1,6 +1,6 @@
-import functionParser from './function';
-import DataLink from '../data_link';
-import { DataParserError } from '..';
+import functionParser from '../function';
+import DataLink from '../../data_link';
+import { DataParserError } from '../..';
 
 const functions = {
     someFunction: jest.fn(() => 'someFunction result'),

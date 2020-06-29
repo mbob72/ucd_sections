@@ -31,7 +31,6 @@
 		"src/**/*.test.js",
 		"src/**/*.test.ts",
 		"lib/**/*",
-		"./.idea",
-		"./jest.config.js"
+		"./.idea"
 	]
 }

@@ -1,6 +1,6 @@
-import { DataParserError } from '../data_parser_error';
-import DataLink from '../data_link';
-import expressionParser from './expression';
+import { DataParserError } from '../../data_parser_error';
+import DataLink from '../../data_link';
+import expressionParser from '../expression';
 
 describe('Some additional tests for the expressionParser', () => {
     it('Expression parser returns an iterator #1', () => {

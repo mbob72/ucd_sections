@@ -1,7 +1,7 @@
 
-import plainParser from './plain';
-import DataLink from '../data_link';
-import { DataParserError } from '../data_parser_error';
+import plainParser from '../plain';
+import DataLink from '../../data_link';
+import { DataParserError } from '../../data_parser_error';
 
 describe('Some additional tests for the plainParser', () => {
     it('The passed dataLink must starts with `', () => {
