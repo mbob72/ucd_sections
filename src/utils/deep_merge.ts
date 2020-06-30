@@ -1,9 +1,8 @@
 import { deepCopy } from './deep_copy';
 import { ExtendedPropertyDescriptorMap } from '../../types/types';
 import { ProcessedObject } from './types';
+import { strictlyIsObject as isObject } from './utils';
 
-const isObject = (value: unknown): boolean =>
-    Object.prototype.toString.call(value) === '[object Object]';
 
 const isArrayOrObject = (value: unknown): boolean =>
     isObject(value) || Array.isArray(value);
@@ -14,7 +13,7 @@ const getValue = (value: unknown): unknown =>
 const getMergedDescriptors = (destProps: ExtendedPropertyDescriptorMap, sourceProps: ExtendedPropertyDescriptorMap, sourceKeys: Array<string> | Array<symbol>) => {
     for (const sourceKey of sourceKeys) {
         if (!Object.prototype.hasOwnProperty.call(sourceProps, sourceKey)) continue;
-        if (!destProps[sourceKey]) {
+        if (typeof destProps[sourceKey] === 'undefined') {
             destProps[sourceKey] = {
                 ...sourceProps[sourceKey],
                 value: getValue(sourceProps[sourceKey].value),
@@ -42,6 +41,7 @@ const getMergedDescriptors = (destProps: ExtendedPropertyDescriptorMap, sourcePr
 };
 
 const deepMerge = (dest: ProcessedObject, source: ProcessedObject): ProcessedObject => {
+    dest = deepCopy(dest);
     if (isObject(dest) && isObject(source)) {
         const sourceProps = Object.getOwnPropertyDescriptors(source);
         const destProps = Object.getOwnPropertyDescriptors(dest);
@@ -55,7 +55,7 @@ const deepMerge = (dest: ProcessedObject, source: ProcessedObject): ProcessedObj
             sourceProps,
             Object.getOwnPropertySymbols(sourceProps)
         );
-        return Object.create({}, destProps);
+        return Object.create(Object.getPrototypeOf({}), destProps);
     } else if (Array.isArray(dest) && Array.isArray(source)) {
         const newArray: Array<unknown> = [];
         for (const i of dest) newArray.push(getValue(i));

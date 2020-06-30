@@ -1,7 +1,7 @@
-import { syncDataParser, asyncDataParser, genDataParser, MODE } from './index';
-import { DataParserError } from '../../data_link_parser/v2/data_parser_error';
-import { dataLinkParser } from '../../data_link_parser/v2'
-import runAsyncGenerator from '../utils/run_async_generator';
+import { syncDataParser, asyncDataParser, genDataParser, MODE } from '../index';
+import { DataParserError } from '../../../data_link_parser/v2/data_parser_error';
+import { dataLinkParser } from '../../../data_link_parser/v2'
+import runAsyncGenerator from '../../utils/run_async_generator';
 
 const schemaCallbacksCollection = {
     formatUppercase: s => s.toUpperCase(),
