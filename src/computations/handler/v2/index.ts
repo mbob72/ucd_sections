@@ -64,11 +64,11 @@ export const getHandler = ({ schema, computations, updateState }: { schema: Reco
                     console.error('There are errors in the form!');
                 } else throw error;
             })
-            .then(() => clearErrors(schema, newContext))
+            // todo: _onError_ computations.
             .catch((error) => {
                 if (error instanceof Error && !(error instanceof BreakPromiseChainError)) {
-                    writeErrors(error, schema, newContext);
                     console.error(error);
+                    throw error;
                 }
             });
 
@@ -88,7 +88,7 @@ export const getHandler = ({ schema, computations, updateState }: { schema: Reco
             .then(
                 (results) => {
                     const status = results.reduce((acc, { status }) => {
-                        return acc || status === 'success';
+                        return acc || status === 'success' || status === 'validationError';
                     }, false);
                     if (status) updateState(newContext);
                     delete formPromises[_formId_];
@@ -96,7 +96,7 @@ export const getHandler = ({ schema, computations, updateState }: { schema: Reco
                 (err) => {
                     if (err instanceof BreakPromiseChainError) throw err;
                     else {
-                        console.error('[error] computations: ', err, err instanceof BreakPromiseChainError);
+                        console.error('[error] computations: ', err);
                     }
                 }
             )
@@ -123,6 +123,8 @@ export const getHandler = ({ schema, computations, updateState }: { schema: Reco
             .catch((error) => {
                 console.error('[error] afterComputations: ', error);
             });
+            
+        return promise;
     };
 };
 
@@ -144,7 +146,7 @@ function run (
     return new Promise((resolve, reject) => {
         const { _formId_ } = schema;
         const { _objectId_ } = currentSchemaObject;
-        const { breakControls = null } = formPromises[_formId_] || {};
+        const { breakControls } = formPromises[_formId_];
         if (controlStatus && !breakControls) {
             throw new Error('[error] breakControls is not defined.');
         }
@@ -159,14 +161,13 @@ function run (
                     reject(err);
                     breakMark = true;
                 }
-                // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-                if (controlStatus && breakControls && breakControls[_objectId_]) delete breakControls[_objectId_];
+                if (controlStatus && breakControls) delete breakControls[_objectId_];
             } catch (e) {
                 reject(e);
             }
         };
         // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-        if (controlStatus && breakControls && breakControls[_objectId_]) breakControls[_objectId_] = stop;
+        if (controlStatus) breakControls[_objectId_] = stop;
 
         const next = (v?: CI.ComputationValue): void => {
             try {
@@ -247,7 +248,8 @@ const compute = (
                     Promise
                         .resolve(act(value, { context, schema, currentSchemaObject, match, location, computations, updateState }))
                         .then((res) => {
-                            if (act.isGenerator()) runAsyncGenerator(res, finalResolve, reject);
+                            const proto = Object.getPrototypeOf(act);
+                            if (proto.constructor && proto.constructor.name === 'GeneratorFunction') runAsyncGenerator(res, finalResolve, reject);
                             else finalResolve(res);
                         })
                         .catch(reject);

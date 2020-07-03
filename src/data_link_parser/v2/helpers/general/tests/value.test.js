@@ -13,22 +13,22 @@ describe('Some additional tests for the valueParser', () => {
 
      it('Incorrect start cursor position', () => {
          let dataLink = new DataLink('( value )');
-         for (const i = 0; i < 3; i++) dataLink.next();
+         for (let i = 0; i < 3; i++) dataLink.next();
          const fn1 = () => valueParser({ dataLink }).next();
          expect(fn1).toThrowError(DataParserError.ERRORS.ITERATOR_ERROR);
 
-         let dataLink = new DataLink('[ value ]');
-         for (const i = 0; i < 3; i++) dataLink.next();
+         dataLink = new DataLink('[ value ]');
+         for (let i = 0; i < 3; i++) dataLink.next();
          const fn2 = () => valueParser({ dataLink }, true).next();
          expect(fn2).toThrowError(DataParserError.ERRORS.ITERATOR_ERROR);
 
-         let dataLink = new DataLink('{ key: value }');
-         for (const i = 0; i < 6; i++) dataLink.next();
+         dataLink = new DataLink('{ key: value }');
+         for (let i = 0; i < 6; i++) dataLink.next();
          const fn3 = () => valueParser({ dataLink }, false).next();
          expect(fn3).toThrowError(DataParserError.ERRORS.DEFAULT);
 
          dataLink.reset();
-         for (const i = 0; i < 8; i++) dataLink.next();
+         for (let i = 0; i < 8; i++) dataLink.next();
          const fn4 = () => valueParser({ dataLink }, false).next();
          expect(fn4).toThrowError(DataParserError.ERRORS.ITERATOR_ERROR);
      })

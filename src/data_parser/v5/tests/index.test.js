@@ -100,14 +100,13 @@ describe('Schema V3', () => {
         };
         const result = {
             key: 'string',
-            _dataLink_: data.b,
             _section_: {
                 key: data.b.c.d,
                 key2: data.b.c.d
             }
         };
-        const result = syncDataParser({ schema, data });
-        expect(result).toEqual(result);
+        const out = syncDataParser({ schema, data });
+        expect(out).toEqual(result);
     });
 
     it('special cases #1: schema is undefined', () => {
