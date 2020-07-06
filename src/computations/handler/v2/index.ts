@@ -115,7 +115,7 @@ export const getHandler = ({ schema, computations, updateState }: { schema: Reco
                     // after chains should not affect the context.
                     // after chains is intended only for service operations (resize iframe, send request...).
                     const chains: Record<string, Promise<any>> = {};
-                    if (isEmpty(afterActions)) return;
+                    if (isEmpty(afterActions)) throw new BreakPromiseChainError();
                     const ids = Object.getOwnPropertyNames(afterActions);
                     for (const id of ids) {
                         const { actions, value, currentSchemaObject } = afterActions[id];
@@ -123,12 +123,18 @@ export const getHandler = ({ schema, computations, updateState }: { schema: Reco
                     }
                     const { promise } = awaitAll(Object.values(chains));
                     return promise;
-                },
-                () => {
-                    return void 0; // processing errors from the finalPromise must be omitted.
                 }
             )
+            .then((results) => {
+                for (const { status, error } of results) {
+                    if (status === 'unknownError') {
+                        delete formPromises[_formId_];
+                        throw new Error(error);
+                    }
+                }
+            })
             .catch((error) => {
+                if (error instanceof BreakPromiseChainError) return;
                 console.error('[error] afterComputations: ', error);
             });
             
@@ -154,7 +160,7 @@ function run (
     return new Promise((resolve, reject) => {
         const { _formId_ } = schema;
         const { _objectId_ } = currentSchemaObject;
-        const { breakControls } = formPromises[_formId_];
+        const { breakControls } = formPromises[_formId_] ?? {};
         if (controlStatus && !breakControls) {
             throw new Error('[error] breakControls is not defined.');
         }
@@ -255,8 +261,9 @@ const compute = (
                         .resolve(act(value, { context, schema, currentSchemaObject, match, location, computations, updateState }))
                         .then((res) => {
                             const proto = Object.getPrototypeOf(act);
-                            if (proto.constructor && proto.constructor.name === 'GeneratorFunction') runAsyncGenerator(res, finalResolve, reject);
-                            else finalResolve(res);
+                            if (proto.constructor && proto.constructor.name === 'GeneratorFunction') {
+                                runAsyncGenerator(res, finalResolve, reject);
+                            } else finalResolve(res);
                         })
                         .catch(reject);
                 } else finalResolve(act);

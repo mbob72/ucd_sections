@@ -260,10 +260,10 @@ const fieldParser = (params: DataParserV4.ParserParamsObject): Record<string, an
                 'DataParserV4: _value_ must be a syntax string or a simple string.'
             );
         if (isDataLink(_value_)) {
-            if (!isLink(_value_) && !isFunctionCall(_value_))
-                throw new Error(
-                    'DataParserV4: _value_ of field must be a simple link or a function call.'
-                );
+            // if (!isLink(_value_) && !isFunctionCall(_value_))
+            //     throw new Error(
+            //         'DataParserV4: _value_ of field must be a simple link or a function call.'
+            //     );
             // _defaultValue_ field should contain a primitive value. todo: in future, it might be a dynamically evaluated value
             result['_value_'] = stringParser(
                 { ...params, dataLink: _value_ }
