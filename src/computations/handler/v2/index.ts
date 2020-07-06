@@ -248,7 +248,6 @@ const compute = (
                 reject(new Error('Returned object must contain "value" and "dataLink" properties.'));
             } else resolve(val);
         };
-        // todo: The passed act param might be a function. This code may process only a string or an object (from schema). May be it is not necessary.
         asyncDataParser(<DataParserInterfaces.v5.EntryParams>{ schema: act, functions: computations, data: context, rootData: context, defaultValue: null, tokens: {} })
             .then((act) => {
                 if (typeof act === 'function') {
