@@ -51,7 +51,6 @@ const dataLinkParser = function* (params: DLPv2.Params): DLPv2.DataLinkParserGen
                     mainResult = setResult(current[1], mainResult);
                     break;
             }
-            if (dataLink.isEnd()) break;
         }
     } catch (Err) {
         console.error(Err);

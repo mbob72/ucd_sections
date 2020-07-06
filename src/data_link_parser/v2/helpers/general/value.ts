@@ -29,7 +29,8 @@ const valueParser = function* (params: DataLinkParserInterfaces.v2.Params, array
         arrayContext === false && current[0] !== ':' && current[0] !== ' ' ||
         typeof arrayContext === 'undefined' &&
         current[0] !== '(' &&
-        current[0] !== ' '
+        current[0] !== ' ' &&
+        current[0] !== ','
     ) {
         throw new DataParserError(DataParserError.ERRORS.ITERATOR_ERROR, data, dataLink);
     }
@@ -38,7 +39,10 @@ const valueParser = function* (params: DataLinkParserInterfaces.v2.Params, array
             case ' ':
                 throw new DataParserError(DataParserError.ERRORS.DEFAULT, data, dataLink);
             case '\\':
-                result = setResult(dataLink.getNextValue());
+                current = dataLink.getNextValue();
+                result = setResult(current[1], result);
+                if (dataLink.isEnd())
+                    throw new DataParserError(DataParserError.ERRORS.NESTING);
                 break;
             case '@': // link part
             case '$': // function part
@@ -46,7 +50,7 @@ const valueParser = function* (params: DataLinkParserInterfaces.v2.Params, array
             case '[': // array part
             case '`': // escaped by the `` symbols string part
             case '(': // expression part
-                result = setResult(yield* indexParser(params));
+                result = setResult(yield* indexParser(params), result);
                 if (dataLink.isEnd())
                     throw new DataParserError(DataParserError.ERRORS.NESTING, data, dataLink);
                 current = dataLink.getCurrentValue();
@@ -62,7 +66,7 @@ const valueParser = function* (params: DataLinkParserInterfaces.v2.Params, array
                         throw new DataParserError(DataParserError.ERRORS.OBJECT_VALUE, data, dataLink);
                     }
                 }
-                result = (result || '') + setResult(current[1]);
+                result = setResult(current[1], result);
                 break;
         }
         switch (current[2]) {

@@ -35,7 +35,7 @@ class TopSection extends React.Component<SectionV4.TopProps, SectionV4.TopState>
             location,
             match,
             // eslint-disable-next-line @typescript-eslint/no-empty-function
-            updateState: (): void => {}
+            updateState: () => Promise.resolve('default')
         };
         this.state = {
             context: null,

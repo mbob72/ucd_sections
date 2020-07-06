@@ -66,7 +66,7 @@ export namespace SectionInterfaces {
             tokenParams: TokenParams
         }
         export interface updateStateCallback {
-            (params: UpdateStateCallbackParam): void;
+            (params: UpdateStateCallbackParam): Promise<any>;
         }
         export type Styles = Record<string, string>;
         export type ClientFieldComponent = React.ComponentClass<Field.ComponentProps>;

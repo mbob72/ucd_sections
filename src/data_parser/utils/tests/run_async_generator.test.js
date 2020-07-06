@@ -1,4 +1,4 @@
-import runAsyncGenerator from './run_async_generator';
+import runAsyncGenerator from '../run_async_generator';
 
 const syncGenerator = function* (thrw) {
     const val = yield 1;

@@ -6,12 +6,9 @@ const getDataLink = (dataLinkString: string): DataLink => {
     if (typeof dataLinkString !== 'string' || !dataLinkString)
         throw new Error('getDataLink: Data link should be a non empty string!');
     if (dataLinkMap.has(dataLinkString)) {
-        const dataLink = dataLinkMap.get(dataLinkString);
-        if (dataLink) {
-            dataLink.reset();
-            return dataLink;
-        }
-        throw new Error('getDataLink: Unknown error!');
+        const dataLink = dataLinkMap.get(dataLinkString) as DataLink;
+        dataLink.reset();
+        return dataLink;
     } else {
         const dataLink = new DataLink(dataLinkString);
         dataLinkMap.set(dataLinkString, dataLink);

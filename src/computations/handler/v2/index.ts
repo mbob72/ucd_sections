@@ -64,11 +64,11 @@ export const getHandler = ({ schema, computations, updateState }: { schema: Reco
                     console.error('There are errors in the form!');
                 } else throw error;
             })
-            .then(() => clearErrors(schema, newContext))
+            // todo: _onError_ computations.
             .catch((error) => {
                 if (error instanceof Error && !(error instanceof BreakPromiseChainError)) {
-                    writeErrors(error, schema, newContext);
                     console.error(error);
+                    throw error;
                 }
             });
 
@@ -84,30 +84,38 @@ export const getHandler = ({ schema, computations, updateState }: { schema: Reco
             };
         }
 
-        promise
+        const finalPromise = promise
             .then(
                 (results) => {
-                    const status = results.reduce((acc, { status }) => {
-                        return acc || status === 'success';
+                    const status = results.reduce((acc, { status, error }) => {
+                        if (status === 'unknownError') {
+                            delete formPromises[_formId_];
+                            throw new Error(error);
+                        }
+                        return acc || status === 'success' || status === 'validationError';
                     }, false);
                     if (status) updateState(newContext);
                     delete formPromises[_formId_];
-                },
-                (err) => {
-                    if (err instanceof BreakPromiseChainError) throw err;
-                    else {
-                        console.error('[error] computations: ', err, err instanceof BreakPromiseChainError);
-                    }
+                    return results;
                 }
-            )
+            );
+
+        finalPromise
+            .catch((err) => {
+                if (!(err instanceof BreakPromiseChainError)) {
+                    console.error('[error] computations: ', err);
+                }
+                throw err; // omit the after computations processing.
+            })
             .then(
                 () => {
                     // todo: after actions should be processed by the same way as main computations chain.
+                    // todo: after computations processint should be moved to the then processor of the current field (the process promise above).
                     // runs the "after actions"
                     // after chains should not affect the context.
                     // after chains is intended only for service operations (resize iframe, send request...).
                     const chains: Record<string, Promise<any>> = {};
-                    if (isEmpty(afterActions)) return;
+                    if (isEmpty(afterActions)) throw new BreakPromiseChainError();
                     const ids = Object.getOwnPropertyNames(afterActions);
                     for (const id of ids) {
                         const { actions, value, currentSchemaObject } = afterActions[id];
@@ -115,14 +123,22 @@ export const getHandler = ({ schema, computations, updateState }: { schema: Reco
                     }
                     const { promise } = awaitAll(Object.values(chains));
                     return promise;
-                },
-                (err) => {
-                    if (err instanceof BreakPromiseChainError) return null;
                 }
             )
+            .then((results) => {
+                for (const { status, error } of results) {
+                    if (status === 'unknownError') {
+                        delete formPromises[_formId_];
+                        throw new Error(error);
+                    }
+                }
+            })
             .catch((error) => {
+                if (error instanceof BreakPromiseChainError) return;
                 console.error('[error] afterComputations: ', error);
             });
+            
+        return finalPromise;
     };
 };
 
@@ -144,7 +160,7 @@ function run (
     return new Promise((resolve, reject) => {
         const { _formId_ } = schema;
         const { _objectId_ } = currentSchemaObject;
-        const { breakControls = null } = formPromises[_formId_] || {};
+        const { breakControls } = formPromises[_formId_] ?? {};
         if (controlStatus && !breakControls) {
             throw new Error('[error] breakControls is not defined.');
         }
@@ -159,14 +175,12 @@ function run (
                     reject(err);
                     breakMark = true;
                 }
-                // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-                if (controlStatus && breakControls && breakControls[_objectId_]) delete breakControls[_objectId_];
+                if (controlStatus && breakControls) delete breakControls[_objectId_];
             } catch (e) {
                 reject(e);
             }
         };
-        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-        if (controlStatus && breakControls && breakControls[_objectId_]) breakControls[_objectId_] = stop;
+        if (controlStatus) breakControls[_objectId_] = stop;
 
         const next = (v?: CI.ComputationValue): void => {
             try {
@@ -240,15 +254,16 @@ const compute = (
                 reject(new Error('Returned object must contain "value" and "dataLink" properties.'));
             } else resolve(val);
         };
-        // todo: The passed act param might be a function. This code may process only a string or an object (from schema). May be it is not necessary.
-        asyncDataParser(<DataParserInterfaces.v5.EntryParams>{ schema: act, functions: computations, data: context, rootData: context, defaultData: null, tokens: {} })
+        asyncDataParser(<DataParserInterfaces.v5.EntryParams>{ schema: act, functions: computations, data: context, rootData: context, defaultValue: null, tokens: {} })
             .then((act) => {
                 if (typeof act === 'function') {
                     Promise
                         .resolve(act(value, { context, schema, currentSchemaObject, match, location, computations, updateState }))
                         .then((res) => {
-                            if (act.isGenerator()) runAsyncGenerator(res, finalResolve, reject);
-                            else finalResolve(res);
+                            const proto = Object.getPrototypeOf(act);
+                            if (proto.constructor && proto.constructor.name === 'GeneratorFunction') {
+                                runAsyncGenerator(res, finalResolve, reject);
+                            } else finalResolve(res);
                         })
                         .catch(reject);
                 } else finalResolve(act);

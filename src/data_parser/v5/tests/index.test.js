@@ -1,5 +1,7 @@
-import { syncDataParser, asyncDataParser, genDataParser } from './index';
-import { DataParserError } from '../../data_link_parser/v2/data_parser_error';
+import { syncDataParser, asyncDataParser, genDataParser, MODE } from '../index';
+import { DataParserError } from '../../../data_link_parser/v2/data_parser_error';
+import { dataLinkParser } from '../../../data_link_parser/v2'
+import runAsyncGenerator from '../../utils/run_async_generator';
 
 const schemaCallbacksCollection = {
     formatUppercase: s => s.toUpperCase(),
@@ -42,6 +44,9 @@ const schemaCallbacksCollection = {
         return new Promise((resolve) => {
             setTimeout(() => resolve(param), 100);
         })
+    },
+    throwError: () => {
+        throw new Error('Unknown error.');
     }
 };
 
@@ -51,6 +56,8 @@ const data = {
         c: {
             d: 'd'
         },
+        '$c': 'someData',
+        'key key': 'keyWithWhitespace',
         kd: {
             ke: 'ke'
         },
@@ -93,14 +100,13 @@ describe('Schema V3', () => {
         };
         const result = {
             key: 'string',
-            _dataLink_: data.b,
             _section_: {
                 key: data.b.c.d,
                 key2: data.b.c.d
             }
         };
-        const result = syncDataParser({ schema, data });
-        expect(result).toEqual(result);
+        const out = syncDataParser({ schema, data });
+        expect(out).toEqual(result);
     });
 
     it('special cases #1: schema is undefined', () => {
@@ -190,8 +196,7 @@ describe('Primary functionality', () => {
     it('should return value if data link is not @link', () => {
         const schema = '1, qwerty';
         expect(syncDataParser({ schema, data }))
-            .toEqual(schema
-);
+            .toEqual(schema);
     });
 
     it('should get data by local key', () => {
@@ -246,6 +251,30 @@ describe('Primary functionality', () => {
         const schema = '\\`@a';
         expect(syncDataParser({ schema: `\`${schema}\``, data })).toEqual('`@a');
     });
+
+    it('Read value from the array', () => {
+        const schema = '@g/1/a';
+        expect(syncDataParser({ schema, data }))
+            .toEqual(data.g[1].a);
+    })
+
+    it('Should return the defaultValue if index is out', () => {
+        const schema = '@g/3/a';
+        expect(syncDataParser({ schema, defaultValue: 'defaultValue', data }))
+            .toEqual('defaultValue');
+    })
+
+    it('Should return the undefined if index is out', () => {
+        const schema = '@g/3/a';
+        expect(syncDataParser({ schema, data }))
+            .toEqual(void 0);
+    })
+
+    it('Should return the defaultValue if key is not exists', () => {
+        const schema = '@keyIsNotExists';
+        expect(syncDataParser({ schema, data, defaultValue: 'defaultValue' }))
+            .toEqual('defaultValue');
+    })
 });
 
 describe('Extended link functionality', () => {
@@ -269,6 +298,13 @@ describe('Extended link functionality', () => {
         const fn = () => syncDataParser({ schema, data, functions: schemaCallbacksCollection })
         expect(fn).toThrowError(DataParserError);
     });
+    
+    it('Experiment', () => {
+        const schema = '@b/key$getCKey()';
+        const fn = () => syncDataParser({ schema, data, functions: schemaCallbacksCollection });
+        expect(fn).toThrow(DataParserError);
+    })
+
     it('Expressions in a link: simple expression', () => {
         const schema = '@b/(c)/d';
         expect(syncDataParser({ schema, data })).toEqual(data.b.c.d);
@@ -296,6 +332,7 @@ describe('Extended link functionality', () => {
         const fn = () => syncDataParser({ schema, data })
         expect(fn).toThrowError(DataParserError);
     });
+
     it('Index array of objects', () => {
         const schema = '@g/<index>';
         const result = data.g.map((item, i) => {
@@ -324,11 +361,34 @@ describe('Extended link functionality', () => {
         const f = () => syncDataParser({ schema, data });
         expect(f).toThrowError(DataParserError.ERRORS.INDEX_NOT_ARRAY_DATA);
     });
-    it('Errors: index should be a standalone part of a link.', () => {
+    it('Errors: index should be a standalone part of a link #1.', () => {
         const schema = '@g/<index>key';
         const f = () => syncDataParser({ schema, data });
         expect(f).toThrowError(DataParserError.ERRORS.INDEX_PART);
     });
+
+    it('Errors: index should be a standalone part of a link #2.', () => {
+        const schema = '@g/key<index>';
+        const f = () => syncDataParser({ schema, data });
+        expect(f).toThrowError(DataParserError.ERRORS.INDEX_PART);
+    });
+
+    it('Escaped whitespace #1.', () => {
+        const schema = '@b/key\\ key';
+        const f = () => syncDataParser({ schema, data });
+        expect(f).toThrowError(DataParserError.ERRORS.LINK);
+    });
+
+    it('Escaped whitespace #2.', () => {
+        const schema = '@b/(key key)';
+        const f = syncDataParser({ schema, data });
+        expect(f).toEqual(data.b['key key']);
+    });
+
+    it('Escaped symbol in link', () => {
+        const schema = '@b/\\$c';
+        expect(syncDataParser({ schema, data })).toEqual(data.b['$c']);
+    })
 });
 
 describe('Expressions', () => {
@@ -342,10 +402,21 @@ describe('Expressions', () => {
         expect(syncDataParser({ schema, data })).toEqual(`${data.a}b`);
     });
 
-    it('should resolve whitespace in expressions', () => {
+    it('should resolve whitespace in expressions #1', () => {
         const schema = '(@a @e)b';
         expect(syncDataParser({ schema, data })).toEqual(`${data.a} ${data.e}b`);
     });
+
+    it('should resolve whitespace in expressions #2', () => {
+        const schema = '(@a    @e)b';
+        expect(syncDataParser({ schema, data })).toEqual(`${data.a}    ${data.e}b`);
+    });
+
+    it('should resolve complex value in expression', () => {
+        const schema = '( string\\$(@b/c/d)\\(\\) )';
+        expect(syncDataParser({ schema, data }))
+            .toEqual('string$d()')
+    })
 
     it('should resolve whitespace and comma in expressions', () => {
         const schema = '(@a, @e)b';
@@ -363,17 +434,38 @@ describe('Expressions', () => {
     });
 
     it('should throw error if nesting is broken', () => {
-        const schema = '()(@a()))\\$';
+        const schema = '()(@a)()))\\$';
         const f = () => syncDataParser({ schema, data });
         expect(f).toThrowError(DataParserError);
         expect(f).toThrowError(DataParserError.ERRORS.NESTING);
     });
     it('should throw error if nesting is broken #2', () => {
-        const schema = '()(@a()';
+        const schema = '()((@a)()';
         const f = () => syncDataParser({ schema, data });
         expect(f).toThrowError(DataParserError);
         expect(f).toThrowError(DataParserError.ERRORS.NESTING);
     });
+
+    it('should throw error if nesting is broken #3', () => {
+        const schema = '(\\a';
+        const f = () => syncDataParser({ schema, data });
+        expect(f).toThrowError(DataParserError);
+        expect(f).toThrowError(DataParserError.ERRORS.NESTING);
+    });
+
+    it('should throw error if nesting is broken #3', () => {
+        const schema = '(`a`   ';
+        const f = () => syncDataParser({ schema, data });
+        expect(f).toThrowError(DataParserError);
+        expect(f).toThrowError(DataParserError.ERRORS.NESTING);
+    });
+
+    it('object and array should be stringified in simple expression', () => {
+        const schema = '([ 1, 2 ])';
+        expect(syncDataParser({ schema })).toEqual('1,2');
+        const schema2 = '({ key: `a` })';
+        expect(syncDataParser({ schema: schema2 })).toEqual('[object Object]');
+    })
 });
 
 describe('Functions', () => {
@@ -463,6 +555,12 @@ describe('Arrays', () => {
             .toEqual([ [ 'a', [ true ] ], [ 'a', null ] ]);
     });
 
+    it('should resolve complex value in array', () => {
+        const schema = '[ string\\$(@b/c/d)\\(\\) ]';
+        expect(syncDataParser({ schema, data }))
+            .toEqual([ 'string$d()' ])
+    })
+
     it('should convert array into renderFunction arguments', () => {
         const schema = '$formatPlus([@b/c/d, @f])';
         expect(syncDataParser({ schema, data, functions: schemaCallbacksCollection }))
@@ -547,6 +645,12 @@ describe('Objects', () => {
         expect(syncDataParser({ schema, data })).toEqual([ { a: data.a }, { b: { c: { d: data.b.c.d } } } ]);
     });
 
+    it('should resolve complex value in object', () => {
+        const schema = '{ key: string\\$(@b/c/d)\\(\\) }';
+        expect(syncDataParser({ schema, data }))
+            .toEqual({ key: 'string$d()' })
+    })
+
     it('should throw parse error if number of parenthesis mismatch', () => {
         const schema = '{{ b: @c }';
         const f = () => syncDataParser({ schema, data });
@@ -556,6 +660,34 @@ describe('Objects', () => {
 
     it('should throw parse error if number of parenthesis mismatch 2', () => {
         const schema = '{ a';
+        const f = () => syncDataParser({ schema, data });
+        expect(f).toThrowError(DataParserError);
+        expect(f).toThrowError(DataParserError.ERRORS.NESTING);
+    });
+
+    it('should throw parse error if number of parenthesis mismatch 3', () => {
+        const schema = 'a }';
+        const f = () => syncDataParser({ schema, data });
+        expect(f).toThrowError(DataParserError);
+        expect(f).toThrowError(DataParserError.ERRORS.NESTING);
+    });
+
+    it('should throw parse error if number of parenthesis mismatch 4', () => {
+        const schema = '{';
+        const f = () => syncDataParser({ schema, data });
+        expect(f).toThrowError(DataParserError);
+        expect(f).toThrowError(DataParserError.ERRORS.NESTING);
+    });
+
+    it('should throw parse error if number of parenthesis mismatch 5', () => {
+        const schema = '{    ';
+        const f = () => syncDataParser({ schema, data });
+        expect(f).toThrowError(DataParserError);
+        expect(f).toThrowError(DataParserError.ERRORS.NESTING);
+    });
+
+    it('should throw parse error if number of parenthesis mismatch 6', () => {
+        const schema = '{ key: value';
         const f = () => syncDataParser({ schema, data });
         expect(f).toThrowError(DataParserError);
         expect(f).toThrowError(DataParserError.ERRORS.NESTING);
@@ -718,11 +850,35 @@ describe('Tokens', () => {
             .toEqual(data.g[index].a);
     });
 
+    it('should return the defaultValue #1', () => {
+        const schema = '@b/:index';
+        expect(syncDataParser({ schema, defaultValue: 'defaultValue', tokens: { index: 'c' } }))
+            .toEqual('defaultValue');
+    })
+
+    it('should return the defaultValue #2', () => {
+        const schema = '@b/:index';
+        expect(syncDataParser({ schema, data, defaultValue: 'defaultValue', tokens: { index: 'key not exists' } }))
+            .toEqual('defaultValue');
+    })
+
+    it('should return the defaultValue #3', () => {
+        const schema = '@g/:index/a';
+        expect(syncDataParser({ schema, data, defaultValue: 'defaultValue', tokens: { index: 3 } }))
+            .toEqual('defaultValue');
+    })
+
     it('should substitute 0 as default token index', () => {
-        const schema = '@g/:index/a @g/:index/a';
+        const schema = '@g/:index/a';
         expect(syncDataParser({ schema, data }))
-            .toEqual(`${data.g[0].a} ${data.g[0].a}`);
+            .toEqual(data.g[0].a);
     });
+
+    it('should return value from the array', () => {
+        const schema = '@g/:index/a';
+        expect(syncDataParser({ schema, data, tokens: { index: 1 } }))
+            .toEqual(data.g[1].a);
+    })
 });
 
 describe('Freaking tests', () => {
@@ -756,21 +912,6 @@ describe('Freaking tests', () => {
         });
     });
 });
-
-const timeMeasurement = (data, schema) => {
-    let totalTime = 0;
-    for (let i = 0; i <= 10000; i++) {
-        const localStart = performance.now();
-        syncDataParser({ schema, data, functions: schemaCallbacksCollection });
-        const localEnd = performance.now();
-        totalTime += localEnd - localStart;
-    }
-    const averageTime = totalTime / 10000;
-    return {
-        totalTime,
-        averageTime
-    };
-};
 
 describe('Async data parser', () => {
     it('Async data parser returns a promise', async () => {
@@ -820,7 +961,7 @@ describe('Async data parser', () => {
         await expect(out).resolves.toEqual(result)
     })
 
-    it('Rejects parsing object with a failed async function', async () => {
+    it('Reject parsing object with a failed async function', async () => {
         const schema = {
             success: '$asyncFunction()',
             fail: '$formatUppercase($asyncFunction(true))'
@@ -828,7 +969,191 @@ describe('Async data parser', () => {
         const out = asyncDataParser({ schema, functions: schemaCallbacksCollection });
         await expect(out).rejects.toThrow('Test error');
     })
+
+    it('Reject parsing object if unknown error has been occured', async () => {
+        const schema = {
+            success: '$asyncFunction()',
+            fail: '$throwError()'
+        };
+        const out = asyncDataParser({ schema, functions: schemaCallbacksCollection });
+        await expect(out).rejects.toThrow('Unknown error');
+    })
 })
+
+describe('Some additional tests', () => {
+    it('The dataLink must be passed', () => {
+        const fn = () => dataLinkParser({ dataLink: 'string' }).next();
+        expect(fn).toThrowError(DataParserError.ERRORS.DATA_LINK_TYPE);
+    })
+
+    it('Test the parsing mode', () => {
+        const schema = {
+            _coreField_: '@b/c/d',
+            userField: '@b/c/d',
+            _coreObject_: {
+                _coreField_: '@b/c/d',
+                userField: '@b/c/d'
+            },
+            userObject: {
+                _coreField_: '@b/c/d',
+                userField: '@b/c/d'
+            },
+            _coreArray_: [ '@b/c/d' ],
+            userArray: [ '@b/c/d' ]
+        }
+
+        const results = {
+            [MODE.FULL_DEEP]: {
+                _coreField_: 'd',
+                userField: 'd',
+                _coreObject_: {
+                    _coreField_: 'd',
+                    userField: 'd'
+                },
+                userObject: {
+                    _coreField_: 'd',
+                    userField: 'd'
+                },
+                _coreArray_: [ 'd' ],
+                userArray: [ 'd' ]
+            },
+            [MODE.FULL_SHALLOW]: {
+                _coreField_: 'd',
+                userField: 'd',
+                _coreObject_: {
+                    _coreField_: '@b/c/d',
+                    userField: '@b/c/d'
+                },
+                userObject: {
+                    _coreField_: '@b/c/d',
+                    userField: '@b/c/d'
+                },
+                _coreArray_: [ '@b/c/d' ],
+                userArray: [ '@b/c/d' ]
+            },
+            [MODE.USER_DEEP]: {
+                userField: 'd',
+                userObject: {
+                    userField: 'd'
+                },
+                userArray: [ 'd' ]
+            },
+            [MODE.USER_SHALLOW]: {
+                userField: 'd',
+                userObject: {
+                    _coreField_: '@b/c/d',
+                    userField: '@b/c/d'
+                },
+                userArray: [ '@b/c/d' ]
+            },
+            [MODE.CORE_DEEP]: {
+                _coreField_: 'd',
+                _coreObject_: {
+                    _coreField_: 'd'
+                },
+                _coreArray_: [ 'd' ]
+            },
+            [MODE.CORE_SHALLOW]: {
+                _coreField_: 'd',
+                _coreObject_: {
+                    _coreField_: '@b/c/d',
+                    userField: '@b/c/d'
+                },
+                _coreArray_: [ '@b/c/d' ]
+            }
+        };
+        expect(syncDataParser({ schema, data })).toEqual(results[MODE.FULL_DEEP]);
+        expect(syncDataParser({ schema, data, mode: MODE.FULL_DEEP })).toEqual(results[MODE.FULL_DEEP]);
+        expect(syncDataParser({ schema, data, mode: 'string' })).toEqual(results[MODE.FULL_DEEP]);
+        expect(syncDataParser({ schema, data, mode: {} })).toEqual(results[MODE.FULL_DEEP]);
+        expect(syncDataParser({ schema, data, mode: 0 })).toEqual(results[MODE.FULL_DEEP]);
+        expect(syncDataParser({ schema, data, mode: true })).toEqual(results[MODE.FULL_DEEP]);
+        expect(syncDataParser({ schema, data, mode: false })).toEqual(results[MODE.FULL_DEEP]);
+        expect(syncDataParser({ schema, data, mode: null })).toEqual(results[MODE.FULL_DEEP]);
+        expect(syncDataParser({ schema, data, mode: void 0 })).toEqual(results[MODE.FULL_DEEP]);
+        expect(syncDataParser({ schema, data, mode: MODE.FULL_SHALLOW })).toEqual(results[MODE.FULL_SHALLOW]);
+        expect(syncDataParser({ schema, data, mode: MODE.USER_DEEP })).toEqual(results[MODE.USER_DEEP]);
+        expect(syncDataParser({ schema, data, mode: MODE.USER_SHALLOW })).toEqual(results[MODE.USER_SHALLOW]);
+        expect(syncDataParser({ schema, data, mode: MODE.CORE_DEEP })).toEqual(results[MODE.CORE_DEEP]);
+        expect(syncDataParser({ schema, data, mode: MODE.CORE_SHALLOW })).toEqual(results[MODE.CORE_SHALLOW]);
+    })
+
+    it('Keys in object should be parsed', () => {
+        const schema = {
+            '@b/c/d': 'value'
+        };
+        const result = {
+            d: 'value'
+        };
+        expect(syncDataParser({ schema, data })).toEqual(result);
+    })
+
+    it('Parsed key in object is not a string', () => {
+        const schema = {
+            '$getObject()': 'value'
+        };
+        const fn = () => syncDataParser({ schema, data, functions: schemaCallbacksCollection });
+        expect(fn).toThrow(Error);
+    })
+
+    it('Get dataParser as generator', async () => {
+        const schema = {
+            key: '$getObject()'
+        };
+        const result = {
+            key: schemaCallbacksCollection.getObject()
+        }
+        const gDP = genDataParser({ schema, data, functions: schemaCallbacksCollection });
+        expect(gDP).toEqual(expect.objectContaining({
+            next: expect.any(Function),
+            [Symbol.iterator]: expect.any(Function)
+        }))
+        const out = await new Promise((resolve, reject) => {
+            runAsyncGenerator(gDP, resolve, reject); // there we should process the iterator.
+        })
+        expect(out).toEqual(result);
+    })
+
+    it('Root data automatically is equal to the data (if it is not passed)', async () => {
+        const schema = {
+            _dataLink_: '@b',
+            key: {
+                key: '@/b/c/d', // read from the rootData.
+                key2: '@c/d' // read from the "local" data (data from the _dataLink_ field)
+            }
+        };
+        const result = {
+            key: {
+                key: 'd',
+                key2: 'd'
+            }
+        };
+        expect(syncDataParser({ schema, data })).toEqual(result);
+
+        const outAsync = await asyncDataParser({ schema, data });
+        expect(outAsync).toEqual(result);
+
+        const outGenerator = await new Promise((resolve, reject) => {
+            runAsyncGenerator(genDataParser({ schema, data }), resolve, reject); // there we should process the iterator.
+        })
+        expect(outGenerator).toEqual(result);
+    })
+});
+
+const timeMeasurement = (data, schema) => {
+    let totalTime = 0;
+    for (let i = 0; i <= 10000; i++) {
+        const localStart = performance.now();
+        syncDataParser({ schema, data, functions: schemaCallbacksCollection });
+        const localEnd = performance.now();
+        totalTime += localEnd - localStart;
+    }
+    const averageTime = totalTime / 10000;
+    return {
+        totalTime,
+        averageTime
+    };
+};
 
 describe('Timing tests', () => {
     it('link parser time testing', () => {
@@ -864,6 +1189,6 @@ describe('Timing tests', () => {
     it('should parse 10000 complex for less than 0.3sec', () => {
         const schema = '[{ b: [{ a  : $formatUppercase(@a)}, [@c]], a: [$formatUppercase(@b/c/d)] }]';
         const { totalTime, averageTime } = timeMeasurement(data, schema);
-        expect(totalTime).toBeLessThan(900); // todo: must be faster!!! It is so slow because work under generators.
+        expect(totalTime).toBeLessThan(900); // todo: must be faster!!! It is so slow because works under generators.
     });
 });

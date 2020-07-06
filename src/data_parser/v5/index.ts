@@ -16,12 +16,12 @@ import DataParserV5 = DataParserInterfaces.v5;
  * In the deep mode all values must be parsed.
  */
 const MODE = {
-    USER_SHALLOW: 0b1001,
-    CORE_SHALLOW: 0b1010,
-    FULL_SHALLOW: 0b1011,
-    USER_DEEP: 0b1101,
-    CORE_DEEP: 0b1110,
-    FULL_DEEP: 0b1111,
+    USER_SHALLOW: 0b10010,
+    CORE_SHALLOW: 0b10100,
+    FULL_SHALLOW: 0b10110,
+    USER_DEEP: 0b11010,
+    CORE_DEEP: 0b11100,
+    FULL_DEEP: 0b11110,
 };
 
 /**
@@ -85,14 +85,14 @@ function* genDataParser({ schema, data, rootData, defaultValue, functions, token
 function* switcher(params: DataParserV5.ParserParamsAny, entry = false): Generator<any, any, any> {
     const { dataLink, mode } = params;
     // shallow or deep mode
-    const modeCode = mode & 0b1100 || 0b1100;
+    const modeCode = mode & 0b11000 || 0b11000;
     if (typeof dataLink === 'string' && dataLink) {
         return yield* dataLinkParser(<DataLinkParserInterfaces.v2.Params>{ ...params, dataLink: getDataLink(dataLink) });
     } else if (isObject(dataLink)) {
-        if (!entry && modeCode === 0b1000) return dataLink;
+        if (!entry && modeCode === 0b10000) return dataLink;
         return yield* objectParser(<DataParserV5.ParserParamsObject>params);
     } else if (Array.isArray(dataLink)) {
-        if (!entry && modeCode === 0b1000) return dataLink;
+        if (!entry && modeCode === 0b10000) return dataLink;
         return yield* arrayParser(<DataParserV5.ParserParamsArray>params);
     } else if (typeof dataLink === 'undefined') {
         console.warn('[warning] dataParserV5: dataLink is undefined.');
@@ -114,7 +114,7 @@ function* arrayParser(params: DataParserV5.ParserParamsArray): Generator<any, an
 function* objectParser(params: DataParserV5.ParserParamsObject): Generator<any, any, any> {
     const { dataLink, mode } = params;
     // user, core or full mode
-    const modeCode = mode & 3 || 3;
+    const modeCode = mode & 0b10110 || 0b10110;
     let { data } = params;
     // _computations_ must be skipped on this step.
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -135,14 +135,11 @@ function* objectParser(params: DataParserV5.ParserParamsObject): Generator<any, 
     // todo: add a keyParser
     const result = {};
     for (const key of Object.getOwnPropertyNames(others)) {
-        if (modeCode !== 3) {
+        if ((modeCode & 0b00110) !== 0b00110) {
             // not full mode
-            if (key[0] === '_' && key[key.length - 1] === '_' && modeCode === 1)
+            if (key[0] === '_' && key[key.length - 1] === '_' && modeCode & 0b00010)
                 continue; // core's fields on user mode.
-            if (
-                (key[0] !== '_' || key[key.length - 1] === '_') &&
-                modeCode === 2
-            )
+            if ((key[0] !== '_' || key[key.length - 1] !== '_') && modeCode & 0b00100)
                 continue; // user's field on core mode.
         }
         const parsedKey = yield* switcher({ ...params, dataLink: key, data });

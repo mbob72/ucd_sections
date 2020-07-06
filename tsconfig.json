@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"target": "ES5",
+		"target": "ES6",
 		"lib": [ "ESNext", "DOM" ],
         "sourceMap": true,
         "noImplicitAny": false,
@@ -31,7 +31,6 @@
 		"src/**/*.test.js",
 		"src/**/*.test.ts",
 		"lib/**/*",
-		"./.idea",
-		"./jest.config.js"
+		"./.idea"
 	]
 }

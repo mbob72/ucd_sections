@@ -1,4 +1,4 @@
-import incrementGenerator from './increment_generator';
+import incrementGenerator from '../increment_generator';
 
 describe('Testing the increment_generator', () => {
     it('Call without new statement', () => {
