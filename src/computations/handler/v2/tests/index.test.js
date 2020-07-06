@@ -13,6 +13,12 @@ const generalComputations = {
     ...asyncComputations,
     ...experimentalComputations,
     simpleFunction: () => ({ value: 'value from simple function', dataLink: '@simple/function/data/link' }),
+    simpleFunction2: () => 'value from simple function 2',
+    simpleAsyncFunction: (param) => {
+        return new Promise(resolve => {
+            setTimeout(() => resolve('data from async function_' + param), 100);
+        });
+    },
     readySyncComputation: (input, env) => {
         return input;
     },
@@ -82,6 +88,16 @@ const generalComputations = {
     functionWithError2: () => {
         return (input, env) => {
             return Promise.reject(new Error('Some error 2!'));
+        }
+    },
+    computationWithIncorrectResult: () => {
+        return (input, env) => {
+            return Promise.resolve('some string');
+        }
+    },
+    computationWithCustomFields: () => {
+        return (input, env) => {
+            return Promise.resolve({ someAdditionalProperty: 'additional value' })
         }
     },
     getObject: () => ({ key: 'value from function' })
@@ -307,6 +323,79 @@ describe('Tests for the computations handler v2', () => {
         expect(updateState.mock.calls[0][0]).toEqual(expect.objectContaining({ '@data/link/path/2': 'second call', '@data/link/path/1': 'first call', data: 'string' }));
     })
 
+    it('Computation based on generator', async () => {
+        const actions = [
+            '$generatorComputation()',
+            '$mockedFunction()',
+            '$setValue()'
+        ];
+
+        const value = { value: 'value', dataLink: '@path/to/data' };
+        const currentSchemaObject = { _objectId_: 12 };
+        const schema = { _formId_: "generator-computation" };
+
+        const handler = getHandler({ schema, computations: generalComputations, updateState });
+        await handler({ value, actions, currentSchemaObject });
+
+        expect(computationMock.mock.calls.length).toEqual(1);
+        expect(computationMock.mock.calls[0][0]).toEqual(expect.objectContaining({
+            value: 'firstValueFromGenerator_secondValueFromGenerator'
+        }));
+        expect(updateState.mock.calls.length).toEqual(1);
+        expect(updateState.mock.calls[0][0]).toEqual(expect.objectContaining({
+            '@path/to/data': 'firstValueFromGenerator_secondValueFromGenerator'
+        }));
+    })
+
+    it('Plain object in computations chain', async () => {
+        const actions = [
+            '$mockedFunction()',
+            {
+                someKey: {
+                    asyncData: '$simpleAsyncFunction(@data)',
+                    syncData: '$simpleFunction2()',
+                    link: '@data'
+                }
+            },
+            '$mockedFunction()',
+            '$setValue()'
+        ];
+
+        const value = { value: 'value', dataLink: 'valueKey' };
+        const context = { data: 'data from context' };
+        const currentSchemaObject = { _objectId_: 15 };
+        const schema = { _formId_: "plain-object-in-computations-chain" };
+        const handler = getHandler({ schema, computations: generalComputations, updateState });
+
+        await handler({ value, schema, actions, context, currentSchemaObject });
+
+        expect(computationMock.mock.calls.length).toEqual(2);
+        expect(updateState.mock.calls.length).toEqual(1);
+        expect(computationMock.mock.calls[0][0]).toEqual(
+            expect.objectContaining({
+                value: 'value',
+                dataLink: 'valueKey'
+            })
+        );
+        expect(computationMock.mock.calls[1][0]).toEqual(
+            expect.objectContaining({
+                value: 'value',
+                dataLink: 'valueKey',
+                someKey: {
+                    asyncData: 'data from async function_data from context',
+                    syncData: 'value from simple function 2',
+                    link: 'data from context'
+                }
+            })
+        );
+        expect(updateState.mock.calls[0][0]).toEqual(expect.objectContaining(
+            {
+                valueKey: 'value',
+                data: 'data from context'
+            }
+        ));
+    })
+
     it('Custom break computations', async () => {
         const actions1 = [
             '$functionWithBreakPromiseChainError()',
@@ -366,30 +455,6 @@ describe('Tests for the computations handler v2', () => {
         );
     })
 
-    it('Computation based on generator', async () => {
-        const actions = [
-            '$generatorComputation()',
-            '$mockedFunction()',
-            '$setValue()'
-        ];
-
-        const value = { value: 'value', dataLink: '@path/to/data' };
-        const currentSchemaObject = { _objectId_: 12 };
-        const schema = { _formId_: "generator-computation" };
-
-        const handler = getHandler({ schema, computations: generalComputations, updateState });
-        await handler({ value, actions, currentSchemaObject });
-
-        expect(computationMock.mock.calls.length).toEqual(1);
-        expect(computationMock.mock.calls[0][0]).toEqual(expect.objectContaining({
-            value: 'firstValueFromGenerator_secondValueFromGenerator'
-        }));
-        expect(updateState.mock.calls.length).toEqual(1);
-        expect(updateState.mock.calls[0][0]).toEqual(expect.objectContaining({
-            '@path/to/data': 'firstValueFromGenerator_secondValueFromGenerator'
-        }));
-    })
-
     // todo: _onError_ handler tests.
     it('Unexpected error', async () => {
         const actions1 = [
@@ -409,14 +474,18 @@ describe('Tests for the computations handler v2', () => {
 
         const handler = getHandler({ schema, computations: generalComputations, updateState });
 
-        await handler({ value, actions: actions1, currentSchemaObject });
-        await handler({ value, actions: actions2, currentSchemaObject });
-
+        const p1 = handler({ value, actions: actions1, currentSchemaObject });
+        const p2 = handler({ value, actions: actions2, currentSchemaObject });
+        await expect(p1).rejects.toThrow(Error);
+        await expect(p2).rejects.toThrow(Error);
+    
         expect(generalComputations.mockedFunction.mock.calls.length).toEqual(0);
         expect(updateState.mock.calls.length).toEqual(0);
+
     })
 
     it('Function return a value without any computation', async () => {
+        // todo: may be function must return a computation always. In other case it should be thrown.
         const actions = [
             '$mockedFunction()',
             '$simpleFunction()', // overrides the initial input value.
@@ -439,5 +508,61 @@ describe('Tests for the computations handler v2', () => {
         expect(updateState.mock.calls[0][0]).toEqual(expect.not.objectContaining({
             '@path/to/data': 'value'
         }))
+    })
+
+    it('Incorrect input value', async () => {
+        const actions = [
+            '$setValue()'
+        ];
+        const incorrectValue1 = { someKey: 'some value' };
+        const incorrectValue2 = 'string';
+
+        const currentSchemaObject = { _objectId_: 12 };
+        const schema = { _formId_: "incorrect-input-value" };
+        const handler = getHandler({ schema, computations: generalComputations, updateState });
+
+        const p1 = handler({ value: incorrectValue1, actions, currentSchemaObject });
+        const p2 = handler({ value: incorrectValue2, actions, currentSchemaObject });
+        await expect(p1).rejects.toThrow(Error);
+        await expect(p2).rejects.toThrow(Error);
+        expect(updateState.mock.calls.length).toEqual(0);
+    })
+
+    it('Computation with custom fields', async () => {
+        const actions = [
+            '$computationWithCustomFields()',
+            '$mockedFunction()',
+            '$setValue()'
+        ];
+
+        const value = { value: 'value', dataLink: '@path/to/data' };
+        const currentSchemaObject = { _objectId_: 13 };
+        const schema = { _formId_: "custom-fields-computation" };
+        const handler = getHandler({ schema, computations: generalComputations, updateState });
+
+        await handler({ value, actions, currentSchemaObject });
+
+        expect(computationMock.mock.calls.length).toEqual(1);
+        expect(computationMock.mock.calls[0][0]).toEqual(expect.objectContaining({ value: 'value', dataLink: '@path/to/data', someAdditionalProperty: 'additional value' }));
+        expect(updateState.mock.calls.length).toEqual(1);
+        expect(updateState.mock.calls[0][0]).toEqual(expect.objectContaining({ '@path/to/data': 'value' }));
+    })
+
+    it('Computation with incorrect result', async () => {
+        const actions = [
+            '$computationWithIncorrectResult()',
+            '$mockedFunction()',
+            '$setValue()'
+        ];
+
+        const value = { value: 'value', dataLink: '@path/to/data' };
+        const currentSchemaObject = { _objectId_: 14 };
+        const schema = { _formId_: "computation-with-incorrect-result" };
+        const handler = getHandler({ schema, computations: generalComputations, updateState });
+
+        const p = handler({ value, actions, currentSchemaObject });
+        await expect(p).rejects.toThrow(Error);
+        expect(generalComputations.mockedFunction2.mock.calls.length).toEqual(0);
+        expect(updateState.mock.calls.length).toEqual(0);
     })
 })

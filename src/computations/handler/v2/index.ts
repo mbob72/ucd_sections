@@ -84,25 +84,33 @@ export const getHandler = ({ schema, computations, updateState }: { schema: Reco
             };
         }
 
-        promise
+        const finalPromise = promise
             .then(
                 (results) => {
-                    const status = results.reduce((acc, { status }) => {
+                    const status = results.reduce((acc, { status, error }) => {
+                        if (status === 'unknownError') {
+                            delete formPromises[_formId_];
+                            throw new Error(error);
+                        }
                         return acc || status === 'success' || status === 'validationError';
                     }, false);
                     if (status) updateState(newContext);
                     delete formPromises[_formId_];
-                },
-                (err) => {
-                    if (err instanceof BreakPromiseChainError) throw err;
-                    else {
-                        console.error('[error] computations: ', err);
-                    }
+                    return results;
                 }
-            )
+            );
+
+        finalPromise
+            .catch((err) => {
+                if (!(err instanceof BreakPromiseChainError)) {
+                    console.error('[error] computations: ', err);
+                }
+                throw err; // omit the after computations processing.
+            })
             .then(
                 () => {
                     // todo: after actions should be processed by the same way as main computations chain.
+                    // todo: after computations processint should be moved to the then processor of the current field (the process promise above).
                     // runs the "after actions"
                     // after chains should not affect the context.
                     // after chains is intended only for service operations (resize iframe, send request...).
@@ -116,15 +124,15 @@ export const getHandler = ({ schema, computations, updateState }: { schema: Reco
                     const { promise } = awaitAll(Object.values(chains));
                     return promise;
                 },
-                (err) => {
-                    if (err instanceof BreakPromiseChainError) return null;
+                () => {
+                    return void 0; // processing errors from the finalPromise must be omitted.
                 }
             )
             .catch((error) => {
                 console.error('[error] afterComputations: ', error);
             });
             
-        return promise;
+        return finalPromise;
     };
 };
 
@@ -166,7 +174,6 @@ function run (
                 reject(e);
             }
         };
-        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         if (controlStatus) breakControls[_objectId_] = stop;
 
         const next = (v?: CI.ComputationValue): void => {
