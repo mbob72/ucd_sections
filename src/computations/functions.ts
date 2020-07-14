@@ -3,7 +3,7 @@ import { ComputationsInterfaces as CI } from '../../types/types';
 
 /** truth if the passed values are strictly equal */
 export const isEqual: CI.SchemaCallbackSimple = (value: any, control: any): boolean => {
-    return value === control;
+    return value === control || Number.isNaN(value) && Number.isNaN(control);
 };
 
 /** truth if all values are truth */
@@ -62,7 +62,11 @@ export const toString: CI.SchemaCallbackSimple = (v: any): string => {
     return String(v);
 };
 
-export const isInRange: CI.SchemaCallbackSimple = ({ range: { min, max } }: { range: { min: number, max: number} }, control: number): boolean => {
+export const isInRange: CI.SchemaCallbackSimple = ({ range: { min, max } }: { range: { min: number, max: number} }, control: number): boolean | never => {
+    min = Number(min);
+    max = Number(max);
+    control = Number(control);
+    if (Number.isNaN(min) || Number.isNaN(max) || Number.isNaN(control)) console.error('[error] isInRange: values must be a number.');
     return control >= min && control <= max;
 };
 
@@ -76,7 +80,7 @@ export const firstLetterUpperCase: CI.SchemaCallbackSimple = (word: string): str
 
 export const toUpperCase: CI.SchemaCallbackSimple = (word: string): string => {
     if (typeof word !== 'string') {
-        console.error('firstLetterUpperCase: word must be a string.');
+        console.error('toUpperCase: word must be a string.');
         return word;
     }
     return word.toUpperCase();
@@ -91,15 +95,7 @@ export const underScoreToCamelCase: CI.SchemaCallbackSimple = (word: string): st
     return parts.map((v) => firstLetterUpperCase(v)).join('');
 };
 
-export const toUppercase: CI.SchemaCallbackSimple = (word: string): string => {
-    if (typeof word !== 'string') {
-        console.error('[error] toUppercase: word must be a string.');
-        return word;
-    }
-    return word.toUpperCase();
-};
-
-export const toLowercase: CI.SchemaCallbackSimple = (word: string): string => {
+export const toLowerCase: CI.SchemaCallbackSimple = (word: string): string => {
     if (typeof word !== 'string') {
         console.error('[error] toUppercase: word must be a string.');
         return word;

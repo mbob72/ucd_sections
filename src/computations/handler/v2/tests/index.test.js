@@ -105,6 +105,9 @@ const generalComputations = {
 
 describe('Tests for the computations handler v2', () => {
 
+    console.error = jest.fn();
+    console.warn = jest.fn();
+
     beforeEach(() => {
         jest.clearAllMocks();
     })

@@ -36,6 +36,11 @@ src[symbolKey] = 'symbol';
 const copy = deepCopy(src);
 
 describe('Tests for the deep_copy utility', () => {
+
+    beforeEach(() => {
+        console.error = jest.fn();
+        console.warn = jest.fn();
+    })
     it('The copy is equal to the source.', () => {
         expect(copy).toStrictEqual(src);
     })

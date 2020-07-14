@@ -1,7 +1,6 @@
 import * as asyncComputations from '../async_computations';
-import { toBoolean, toNumber, toString, toLowercase, toUpperCase } from '../functions';
+import { toString, toUpperCase } from '../functions';
 import BreakPromiseChainError from '../handler/errors/break_promise_chain_error';
-import { isExportDeclaration, JsxEmit } from 'typescript';
 
 describe('Tests for builtin async computations', () => {
 
