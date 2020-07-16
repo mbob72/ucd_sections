@@ -118,15 +118,14 @@ export const FieldEntry: React.ComponentClass<FieldV4.EntryPropsIn> = compose<Fi
             let { _type_ = '' } = parsedSchema ?? {};
             if (!Array.isArray(after))
                 throw new Error('[error] SectionField: _after_ must be an array.');
-            const visible =
-        typeof _visible_ === 'string'
-            ? syncDataParser({
-                schema: _visible_,
-                data: context,
-                functions: computations,
-                tokens: tokenParams
-            } as DataParserInterfaces.v5.EntryParams)
-            : !!_visible_;
+            const visible = typeof _visible_ === 'string'
+                ? syncDataParser({
+                    schema: _visible_,
+                    data: context,
+                    functions: computations,
+                    tokens: tokenParams
+                } as DataParserInterfaces.v5.EntryParams)
+                : !!_visible_;
             if (isDataLink(_type_)) {
                 _type_ = syncDataParser({
                     schema: _type_,
