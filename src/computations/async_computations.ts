@@ -32,6 +32,7 @@ export const breakAction: CI.SchemaCallbackForComputations = (): CI.SyncComputat
  */
 export const overrideInputValue: CI.SchemaCallbackForComputations = (dataLink: string, value: any): CI.SyncComputation => {
     return (): CI.ComputationValue => {
+        if (typeof dataLink != 'string') throw new Error('[error] overrideInputValue: dataLink must be a string.');
         dataLink = '@' + dataLink;
         return { dataLink, value };
     };

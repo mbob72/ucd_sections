@@ -25,7 +25,7 @@ class TopSection extends React.Component<SectionV4.TopProps, SectionV4.TopState>
             ...builtInAsyncComputations,
             // ...experimental,
         };
-        const tokenParams = { ...qs.parse(history.location.search) };
+        const tokenParams = history ? { ...qs.parse(history.location.search) } : {};
         this.sectionEnvironment = {
             computations: fullComputations,
             fieldComponents,
@@ -53,7 +53,7 @@ class TopSection extends React.Component<SectionV4.TopProps, SectionV4.TopState>
         const { data, schema, history } = props;
         const { data: stateData, schema: stateSchema } = state;
         if (data === stateData && schema === stateSchema) return null;
-        const tokenParams = { ...qs.parse(history.location.search) };
+        const tokenParams = history ? { ...qs.parse(history.location.search) } : {};
         if (schema && strictlyIsObject(schema) && data && strictlyIsObject(data)) {
             const { context: newContext, schema: newSchema } = schemaParser({
                 dataLink: schema,

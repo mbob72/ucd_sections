@@ -77,6 +77,11 @@ const data = {
 };
 
 describe('Schema V3', () => {
+
+    beforeEach(() => {
+        console.error = jest.fn();
+        console.warn = jest.fn();
+    })
     it('array parsing #1', () => {
         const schema = [ 1, 'string', null ];
         const result = syncDataParser({ schema: schema, data });
