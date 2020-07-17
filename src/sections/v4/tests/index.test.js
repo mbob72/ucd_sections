@@ -253,12 +253,13 @@ describe('Sections/v4', () => {
         const schema2 = {
             _fields_: [
                 {
-                    id: 'SomeId'
+                    id: 'SomeId',
+                    _value_: '@key'
                 }
             ]
         };
-        const sections1 = () => mount(<Sections data={generalData} schema={schema1} computations={computations} sectionComponents={{}} fieldComponents={{}} />);
-        const sections2 = () => mount(<Sections data={generalData} schema={schema2} computations={computations} sectionComponents={{}} fieldComponents={{}} />);
+        const sections1 = () => mount(<Sections data={generalData} schema={schema1} computations={computations} sectionComponents={{}} fieldComponents={components.fields} />);
+        const sections2 = () => mount(<Sections data={generalData} schema={schema2} computations={computations} sectionComponents={components.sections} fieldComponents={{}} />);
         expect(sections1).toThrow(Error);
         expect(sections2).toThrow(Error);
     })
@@ -289,7 +290,7 @@ describe('Sections/v4', () => {
             // _formId_: 'some-string-schema-id', 
             _fields_: [
                 {
-                    _type_: "FieldWithOnClickAndErrorMessages",
+                    _type_: "$simpleFunction(FieldWithOnClickAndErrorMessages)",
                     _value_: "@key",
                     _computations_: {
                         _handlers_: {
@@ -313,7 +314,7 @@ describe('Sections/v4', () => {
             _formId_: 'some-string-schema-id', 
             _fields_: [
                 {
-                    _type_: "FieldWithOnClickAndErrorMessages",
+                    _type_: "$simpleFunction(FieldWithOnClickAndErrorMessages)",
                     _value_: "@key",
                     _computations_: {
                         _handlers_: {
