@@ -167,7 +167,7 @@ export const FieldEntry: React.ComponentClass<FieldV4.EntryPropsIn> = compose<Fi
                     );
             }
 
-            const { errors } = context ? context[Symbol.for(String(_objectId_))] || {} : undefined;
+            const { errors = [] } = context ? context[Symbol.for(String(_objectId_))] ?? {} : {};
             return {
                 visible,
                 handlers,
