@@ -4,6 +4,7 @@ import Sections from '../index';
 import * as asyncComputations from '../../../computations/async_computations';
 import * as functions from '../../../computations/functions';
 import { syncDataParser, MODE } from '../../../data_parser/v5';
+import ValidationError from '../../../computations/handler/errors/validation_error';
 
 const components = {
     fields: {
@@ -19,6 +20,21 @@ const components = {
         },
         AdditionalField: (props) => {
             return <div className="AdditionalFieldClassName">AdditionalField</div>
+        },
+        FieldWithOnClickAndErrorMessages: (props) => {
+            const { handlers: { onClick } = {}, errors, parsedSchema, context, computations } = props;
+            const { _value_ } = syncDataParser({ schema: parsedSchema, data: context, functions: computations, mode: MODE.FULL_SHALLOW })
+            return <div className="FieldWithOnClickAndErrorMessagesClassName">
+                <p>FieldWithOnClickAndErrorMessages</p>
+                <button id="Button01" onClick={() => onClick({ target: { value: _value_ } })}>SomeButton</button>
+                {
+                    errors && Array.isArray(errors) && errors.length
+                        ? <div id="ErrorMessagesInOnClickField">{errors.map((error) => {
+                            return <p>{error}</p>;
+                        })}</div>
+                        : null
+                }
+            </div>
         }
     },
     sections: {
@@ -42,14 +58,34 @@ const components = {
     }
 };
 
+const mockedComputation = jest.fn((input, env) => {
+    return input;
+});
+
 const computations = {
     // builtin computations
     ...functions,
     ...asyncComputations,
-    simpleFunction: jest.fn(value => value)
+    simpleFunction: jest.fn(value => value),
+    computationWithValidationError: () => {
+        return (input, env) => {
+            throw new ValidationError('Test validation error!');
+        }
+    },
+    mockedFunctionComputation: jest.fn(() => {
+        return mockedComputation;
+    })
 };
 
 const styles = {};
+
+const history = { // from react router
+    location: {
+        search: '?param=A&param2=B'
+    }
+};
+const location = {}; // from react router
+const match = {}; // from react router
 
 const generalData = {
     key: 'value',
@@ -65,10 +101,11 @@ const generalData = {
 };
 
 describe('Sections/v4', () => {
+    console.error = jest.fn();
+    console.warn = jest.fn();
+
     beforeEach(() => {
         jest.clearAllMocks();
-        console.error = jest.fn();
-        console.warn = jest.fn();
     })
 
     it('Empty data and empty schema', () => {
@@ -209,6 +246,133 @@ describe('Sections/v4', () => {
         expect(sections.find('.AdditionalSectionClassName').length).toEqual(2);
         expect(sections.find('.DefaultField').length).toEqual(1);
         expect(sections.find('.AdditionalFieldClassName').length).toEqual(1);
+    })
+
+    it('Error if DefaultSection and/or DefaultField does not exist', () => {
+        const schema1 = {};
+        const schema2 = {
+            _fields_: [
+                {
+                    id: 'SomeId'
+                }
+            ]
+        };
+        const sections1 = () => mount(<Sections data={generalData} schema={schema1} computations={computations} sectionComponents={{}} fieldComponents={{}} />);
+        const sections2 = () => mount(<Sections data={generalData} schema={schema2} computations={computations} sectionComponents={{}} fieldComponents={{}} />);
+        expect(sections1).toThrow(Error);
+        expect(sections2).toThrow(Error);
+    })
+
+    it('Error if nested sections or fields are passed in a field block', () => {
+        const schema1 = {
+            _fields_: [
+                {
+                    _sections_: [ {} ] // invalid
+                }
+            ]
+        };
+        const schema2 = {
+            _fields_: [
+                {
+                    _fields_: [ {} ] // invalid
+                }
+            ]
+        };
+        const sections1 = () => mount(<Sections data={generalData} schema={schema1} computations={computations} sectionComponents={components.sections} fieldComponents={components.fields} />);
+        const sections2 = () => mount(<Sections data={generalData} schema={schema2} computations={computations} sectionComponents={components.sections} fieldComponents={components.fields} />);
+        expect(sections1).toThrow(Error);
+        expect(sections2).toThrow(Error);
+    })
+
+    it('FormId is necessary for computations processing', () => {
+        const schema = {
+            // _formId_: 'some-string-schema-id', 
+            _fields_: [
+                {
+                    _type_: "FieldWithOnClickAndErrorMessages",
+                    _value_: "@key",
+                    _computations_: {
+                        _handlers_: {
+                            _onClick_: [
+                                '$setValue()'
+                            ]
+                        }
+                    }
+                }
+            ]
+        };
+        const sections = mount(<Sections data={generalData} schema={schema} computations={computations} sectionComponents={components.sections} fieldComponents={components.fields} />);
+        const button = sections.find('#Button01');
+        const fn = () => button.simulate('click');
+        expect(fn).toThrow(Error);
+        expect(fn).toThrowError('SectionsComputations: formId must be defined.');
+    })
+
+    it('OnClick computations processing', async () => {
+        const schema = {
+            _formId_: 'some-string-schema-id', 
+            _fields_: [
+                {
+                    _type_: "FieldWithOnClickAndErrorMessages",
+                    _value_: "@key",
+                    _computations_: {
+                        _handlers_: {
+                            _onClick_: [
+                                '$mockedFunctionComputation()', // test
+                                '$setValue()' // write the passed value to the context.
+                            ]
+                        }
+                    }
+                }
+            ]
+        };
+        const sections = mount(<Sections data={generalData} schema={schema} computations={computations} sectionComponents={components.sections} fieldComponents={components.fields} history={history} location={location} match={match} />);
+        sections.find('#Button01').simulate('click');
+        await new Promise((resolve) => setTimeout(resolve));
+
+        expect(computations.mockedFunctionComputation).toBeCalledTimes(1);
+        expect(mockedComputation).toBeCalledTimes(1);
+        expect(mockedComputation.mock.calls[0][0]).toEqual({
+            value: generalData.key,
+            dataLink: expect.any(String)
+        });
+        expect(mockedComputation.mock.calls[0][1]).toMatchObject({
+            context: expect.any(Object),
+            updateState: expect.any(Function),
+            currentSchemaObject: expect.any(Object),
+            schema: expect.any(Object),
+            computations: expect.any(Object),
+            match,
+            location
+        });
+    })
+
+    it('Validation error and error messages', async () => {
+        const schema = {
+            _formId_: 'validation-error', 
+            _fields_: [
+                {
+                    _type_: "FieldWithOnClickAndErrorMessages",
+                    _value_: "@key",
+                    _computations_: {
+                        _handlers_: {
+                            _onClick_: [
+                                '$computationWithValidationError()', // this function checks the passed input value and throws ValidationError.
+                                '$setValue()'
+                            ]
+                        }
+                    }
+                }
+            ]
+        };
+        const sections = mount(<Sections data={generalData} schema={schema} computations={computations} sectionComponents={components.sections} fieldComponents={components.fields} histor={history} location={location} match={match} />);
+        sections.find('#Button01').simulate('click');
+        await new Promise((resolve) => setTimeout(resolve));
+        sections.update();
+
+        const errorMessages = sections.find('div#ErrorMessagesInOnClickField');
+        expect(errorMessages.length).toEqual(1);
+        expect(errorMessages.contains(<p>Test validation error!</p>)).toBeTruthy();
     })
 
 })
