@@ -192,7 +192,7 @@ describe('Sections/v4', () => {
                             _value_: "`some literal value`"
                         }
                     ],
-                    _visible_: false
+                    _visible_: "$simpleFunction(false)"
                 }
             ],
             _fields_: [
