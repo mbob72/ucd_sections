@@ -63,6 +63,11 @@ const objectParser = function* (params: DataLinkParserInterfaces.v2.Params): Gen
         throw new DataParserError(DataParserError.ERRORS.ITERATOR_ERROR, data, dataLink);
     }
 
+    if (current[2] === '}') {
+        dataLink.getNextValue();
+        return {};
+    }
+
     for (current of dataLink) {
         switch (current[1]) {
             case ',':

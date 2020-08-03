@@ -167,7 +167,7 @@ const objectParser = (params: DataParserV4.ParserParamsObject): Record<string, a
             data,
             rootData,
             dataLink: _dataLink_,
-        }));
+        }, true));
     const result = Object.create(
         {},
         <PropertyDescriptorMap>{
@@ -451,6 +451,7 @@ const templateParser = (params: DataParserV4.ParserParamsObject, mode: string | 
     return result;
 };
 
+const escapedContexKeyRegex = new RegExp('(?<!\\\\)([@/()$])', 'g');
 /**
  * Replaces all links to context keys,
  * reads values of all links from data and write them to the context.
@@ -495,7 +496,7 @@ const stringParser = (params: DataParserV4.ParserParamsString): any => {
                 : mergeLinks(<{ dataPath: string, link: string }>{ dataPath, link });
             if (value !== undefined) context[contextKey] = value;
             const escapedContextKey = contextKey.replace(
-                /(?<!\\)([@/])/g,
+                escapedContexKeyRegex,
                 '\\$1'
             );
             dataLink = dataLink.replace(link, '@' + escapedContextKey);
@@ -561,10 +562,11 @@ const parseDataLink = (params: DataParserV4.ParserParamsString, shouldBeAdded = 
     let { data, dataPath } = params;
     if (typeof dataLink !== 'string' || !isLink(dataLink))
         throw new Error('DataParserV4: _dataLink_ must be a simple Link.');
-    const pureDataLink = /<[a-zA-Z0-9_]+>$/.test(dataLink)
+    let pureDataLink = /<[a-zA-Z0-9_]+>$/.test(dataLink)
         ? dataLink.replace(/\/<.+>$/, '')
         : dataLink;
-    dataPath = mergeLinks(<{ dataPath: string, link: string }>{ dataPath, link: pureDataLink });
+    pureDataLink = syncDataParser(<DataParserInterfaces.v5.EntryParams>{ schema: pureDataLink.substring(1), data, rootData, functions: renderFunctions, tokens }); // resolve dataLink's dynamic parts
+    dataPath = mergeLinks(<{ dataPath: string, link: string }>{ dataPath, link: `@${pureDataLink}` });
     data = syncDataParser(<DataParserInterfaces.v5.EntryParams>{
         schema: dataLink,
         data,
@@ -573,7 +575,7 @@ const parseDataLink = (params: DataParserV4.ParserParamsString, shouldBeAdded = 
         tokens,
     });
     if (shouldBeAdded && !Object.prototype.hasOwnProperty.call(context, dataPath))
-        context[pureDataLink] = data;
+        context[`@${pureDataLink}`] = data;
     return { dataPath, data };
 };
 

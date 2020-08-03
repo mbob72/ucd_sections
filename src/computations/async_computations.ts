@@ -39,11 +39,11 @@ export const overrideInputValue: CI.SchemaCallbackForComputations = (dataLink: s
 };
 
 /** Writes the passed value to the context. */
-export const setValue: CI.SchemaCallbackForComputations = (): CI.SyncComputation => {
+export const setValue: CI.SchemaCallbackForComputations = (valueFromSchema: any): CI.SyncComputation => {
     return (input: CI.ComputationValue, { context }: CI.ComputationEnvironment): CI.ComputationValue => {
         const { dataLink, value } = input;
         if (context) {
-            context[dataLink] = value;
+            context[dataLink] = typeof valueFromSchema === 'undefined' ? value : valueFromSchema;
         } else {
             console.warn('[warning] Context is empty!');
         }
