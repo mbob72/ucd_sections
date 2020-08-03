@@ -18,6 +18,7 @@
 		"declaration": true,
 		"declarationDir": "./lib",
 		"declarationMap": true,
+		"skipLibCheck": true,
 		"typeRoots": [
 			"./types",
 			"./node_modules/@types"
