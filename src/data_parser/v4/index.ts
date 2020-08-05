@@ -384,7 +384,7 @@ const templateParser = (params: DataParserV4.ParserParamsObject, mode: string | 
         true
     ); // todo: may be the dataLink's data should be placed in the context...
     if (!Array.isArray(data)) {
-        throw new Error('DataParserV4: data for a template must be an array.');
+        throw new Error('DataParserV4: data for template must be an array.');
     }
     if (!Object.prototype.hasOwnProperty.call(context, Symbol.for(dataPath))) {
         // Save the template schema and the current dataPath for item adding functionality.

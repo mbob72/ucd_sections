@@ -97,7 +97,46 @@ const generalData = {
         boolean: {
             value: false
         }
-    }
+    },
+    list: [
+        {
+            key: 'first'
+        },
+        {
+            key: 'second'
+        },
+        {
+            key: 'third'
+        }
+    ],
+    list2: [
+        {
+            key: 'first',
+            subList: [
+                {
+                    key: 'firstFirst'
+                }
+            ]
+        },
+        {
+            key: 'second',
+            subList: [
+                {
+                    key: 'secondFirst'
+                },
+                {
+                    key: 'secondSecond'
+                },
+                {
+                    key: 'secondThird'
+                },
+            ]
+        },
+        {
+            key: 'third',
+            subList: []
+        }
+    ]
 };
 
 describe('Sections/v4', () => {
@@ -374,6 +413,123 @@ describe('Sections/v4', () => {
         const errorMessages = sections.find('div#ErrorMessagesInOnClickField');
         expect(errorMessages.length).toEqual(1);
         expect(errorMessages.contains(<p>Test validation error!</p>)).toBeTruthy();
+    })
+
+    it('Templates: simple example', () => {
+        const schema = {
+            _sections_: { // this template will be converted to a list of the AdditionalSection component
+                _dataLink_: "@/list",
+                _template_: {
+                    _type_: "AdditionalSection",
+                    _fields_: [
+                        {
+                            _value_: "@key",
+                            id: '@key'
+                        }
+                    ]
+                }
+            }
+        };
+        const sections = mount(<Sections data={generalData} schema={schema} computations={computations} sectionComponents={components.sections} fieldComponents={components.fields} histor={history} location={location} match={match} />);
+        const additionalSections = sections.find('div.AdditionalSectionClassName');
+        const defaultFields = sections.find('div.DefaultField');
+        expect(additionalSections.length).toEqual(generalData.list.length);
+        expect(defaultFields.length).toEqual(generalData.list.length);
+        expect(defaultFields.at(0).find('#defaultFieldValue').text()).toEqual(generalData.list[0].key);
+        expect(defaultFields.at(1).find('#defaultFieldValue').text()).toEqual(generalData.list[1].key);
+        expect(defaultFields.at(2).find('#defaultFieldValue').text()).toEqual(generalData.list[2].key);
+    })
+
+    it('Templates: nested templates', () => {
+        const schema = {
+            _sections_: { // this template will be converted to a list of the AdditionalSection components
+                _dataLink_: "@/list2",
+                _template_: {
+                    _type_: "AdditionalSection",
+                    _fields_: { // nested template, this template will be converted to a list of the DefaultField components
+                        _dataLink_: '@subList', // the same as the next link: @/list2/subList
+                        _template_: {
+                            _value_: "@key",
+                            id: '@key'
+                        }
+                    }
+                }
+            }
+        };
+        const sections = mount(<Sections data={generalData} schema={schema} computations={computations} sectionComponents={components.sections} fieldComponents={components.fields} histor={history} location={location} match={match} />);
+        const additionalSections = sections.find('div.AdditionalSectionClassName');
+        const defaultFields = sections.find('div.DefaultField');
+        expect(additionalSections.length).toEqual(generalData.list2.length);
+        expect(defaultFields.length).toEqual(generalData.list2[0].subList.length + generalData.list2[1].subList.length + generalData.list2[2].subList.length);
+        expect(defaultFields.at(0).find('#defaultFieldValue').text()).toEqual(generalData.list2[0].subList[0].key);
+        expect(defaultFields.at(1).find('#defaultFieldValue').text()).toEqual(generalData.list2[1].subList[0].key);
+        expect(defaultFields.at(2).find('#defaultFieldValue').text()).toEqual(generalData.list2[1].subList[1].key);
+        expect(defaultFields.at(3).find('#defaultFieldValue').text()).toEqual(generalData.list2[1].subList[2].key);
+        // generalData.list2[2].subList is empty list
+    })
+
+    it('Templates: data for template must be an array', () => {
+        const schema = {
+            _sections_: {
+                _dataLink_: "@/some/boolean/value",
+                _template_: {
+                    _type_: "AdditionalSection",
+                    _fields_: [
+                        {
+                            _value_: "@key",
+                            id: '@key'
+                        }
+                    ]
+                }
+            }
+        };
+        const fn = () => mount(<Sections data={generalData} schema={schema} computations={computations} sectionComponents={components.sections} fieldComponents={components.fields} histor={history} location={location} match={match} />);
+        expect(fn).toThrow(Error);
+        expect(fn).toThrowError('DataParserV4: data for template must be an array.');
+    })
+
+    it('Templates: template for sections must be an object', () => {
+        const schema = {
+            _sections_: {
+                _dataLink_: "@/list",
+                _template_: [] // must be an object
+            }
+        };
+        const fn = () => mount(<Sections data={generalData} schema={schema} computations={computations} sectionComponents={components.sections} fieldComponents={components.fields} histor={history} location={location} match={match} />);
+        expect(fn).toThrow(Error);
+        expect(fn).toThrowError('DataParserV4: template must be an object (sectionsMode).');
+    })
+
+    it('Templates: template for fields must be an object', () => {
+        const schema = {
+            _fields_: {
+                _dataLink_: "@/list",
+                _template_: [] // must be an object
+            }
+        };
+        const fn = () => mount(<Sections data={generalData} schema={schema} computations={computations} sectionComponents={components.sections} fieldComponents={components.fields} histor={history} location={location} match={match} />);
+        expect(fn).toThrow(Error);
+        expect(fn).toThrowError('DataParserV4: template must be an object (fieldsMode).');
+    })
+
+    it('Templates: data for template must be an array of objects or arrays', () => {
+        const schema = {
+            _fields_: {
+                _dataLink_: "@/array", // list of strings
+                _template_: {
+                    _type_: "AdditionalSection",
+                    _fields_: [
+                        {
+                            _value_: "@key",
+                            id: '@key'
+                        }
+                    ]
+                }
+            }
+        };
+        const fn = () => mount(<Sections data={generalData} schema={schema} computations={computations} sectionComponents={components.sections} fieldComponents={components.fields} histor={history} location={location} match={match} />);
+        expect(fn).toThrow(Error);
+        expect(fn).toThrowError('DataParserV4: each template data item must be an object or an array.');
     })
 
 })
