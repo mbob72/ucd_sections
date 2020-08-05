@@ -449,8 +449,7 @@ describe('Sections/v4', () => {
                     _fields_: { // nested template, this template will be converted to a list of the DefaultField components
                         _dataLink_: '@subList', // the same as the next link: @/list2/subList
                         _template_: {
-                            _value_: "@key",
-                            id: '@key'
+                            _value_: "@key"
                         }
                     }
                 }
