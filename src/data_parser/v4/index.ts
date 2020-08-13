@@ -481,7 +481,7 @@ const stringParser = (params: DataParserV4.ParserParamsString): any => {
                 tokens,
                 functions: renderFunctions,
             });
-            if (/[/@]:[a-zA-Z0-9_]+\//.test(link)) {
+            if (/[/@]:\w+?/.test(link)) {
                 const newLink = replaceTokens(
                     link,
                     tokens,
